@@ -1,9 +1,8 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { PassportStrategy } from '@nestjs/passport';
 import { passportJwtSecret } from 'jwks-rsa';
 import { ExtractJwt, Strategy } from 'passport-jwt';
-import { ChangeToken } from '../OnBehalfOf/obo.service.js';
 
 @Injectable()
 export class TokenGuard extends PassportStrategy(Strategy, 'azure-token') {
