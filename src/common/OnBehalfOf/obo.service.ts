@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { HttpService } from '@nestjs/axios';
 import { ConfigService } from '@nestjs/config';
-import { oboTokenExchange } from './obo.entities.js';
+import { getGraphTokenDTO } from './dto/obo.dto.js';
 import { firstValueFrom } from 'rxjs';
 import type { Request } from 'express';
 
@@ -12,7 +12,7 @@ export class OnBehalfOfService {
     private readonly configService: ConfigService,
   ) {}
 
-  async changeToken(req:Request): Promise<any> {
+  async changeToken(req:Request): Promise<string> {
     const authHeader = req.headers.authorization; //se toma la request completa que llego al endpoint y se obtiene el header de autorizacion
     const token = authHeader?.startsWith('Bearer ')  // se le quita el prefijo bearer para manipular unicamente el token
       ? authHeader.slice(7)
@@ -21,7 +21,7 @@ export class OnBehalfOfService {
     const CLIENT_ID = this.configService.get('AZURE_CLIENT_ID');
     const SECRET = this.configService.get('AZURE_SECRET');
     const url = `https://login.microsoftonline.com/${TENANT_ID}/oauth2/v2.0/token`;
-    const data: oboTokenExchange = {
+    const data: getGraphTokenDTO = {
       grant_type: 'urn:ietf:params:oauth:grant-type:jwt-bearer',
       client_id: CLIENT_ID,
       client_secret: SECRET,

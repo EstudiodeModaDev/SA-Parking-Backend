@@ -1,4 +1,4 @@
-export type oboTokenExchange = {
+export type getGraphTokenDTO = {
   grant_type: string;
   client_id: string;
   client_secret: string;
