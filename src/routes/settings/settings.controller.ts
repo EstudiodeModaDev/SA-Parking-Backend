@@ -1,4 +1,4 @@
-import { Controller, Get, Req, UseGuards } from '@nestjs/common';
+import { Controller, Get, Req, UseGuards, Put } from '@nestjs/common';
 import type { Request } from 'express';
 import { AuthGuard } from '@nestjs/passport';
 import { OnBehalfOfService } from '../../common/OnBehalfOf/obo.service.js';
@@ -13,5 +13,12 @@ export class settingsControler {
     async getSettings(@Req() req:Request) {
         const graphToken =  await this.OBOService.changeToken(req)
         return this.SettingsService.getSettings(graphToken)
+    }
+
+    @Put('put')
+    @UseGuards(AuthGuard('azure-token'))
+    async putSettings(@Req() req:Request){
+        const graphToken = await this.OBOService.changeToken(req)
+        return this.SettingsService.putSettings(graphToken, req.body)
     }
 }

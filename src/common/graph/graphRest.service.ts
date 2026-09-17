@@ -143,10 +143,10 @@ export class GraphRestService {
     return response.data;
   }
 
-  async update(
+  async update<T>(
     graphToken: string,
     itemId: string,
-    fields: Record<string, unknown>,
+    fields: T,
     listName: string,
   ) {
     const siteId = await this.getSiteId(graphToken);
