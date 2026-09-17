@@ -5,8 +5,8 @@ import { HttpModule } from '@nestjs/axios';
 
 @Module({
   imports: [HttpModule],
-  controllers: [], //realizar la llamada correspondiente al service y al controller 
+  controllers: [], //realizar la llamada correspondiente al service y al controller
   providers: [OnBehalfOfService],
-  exports : [OnBehalfOfService]
+  exports: [OnBehalfOfService],
 })
 export class OnBehalfOfModule {}

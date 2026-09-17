@@ -37,5 +37,7 @@ export class TokenGuard extends PassportStrategy(Strategy, 'azure-token') {
       issuer: `https://sts.windows.net/${tenantId}/`,
     });
   }
-  async validate() {}
+  async validate(payload: unknown) {
+    return payload;
+  }
 }
