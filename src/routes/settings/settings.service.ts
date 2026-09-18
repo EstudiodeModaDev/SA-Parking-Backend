@@ -1,13 +1,16 @@
 import { Injectable } from "@nestjs/common";
 import { GraphRestService } from "../../common/graph/graphRest.service.js";
 import { SettingsDTO } from "./dto/settings.dto.js";
+import { ConfigService } from "@nestjs/config";
 
 @Injectable()
 export class settingsService{
 
-    private listName = 'Parking-Settings'
+    private listName :string
 
-    constructor(private readonly graphRestService:GraphRestService){}
+    constructor(private readonly graphRestService:GraphRestService, private readonly configService:ConfigService){
+        this.listName = String(configService.get('SETTINGS_LIST_NAME'))
+    }
 
     async getSettings(graphToken :string){
         let response = await this.graphRestService.get(graphToken, this.listName, undefined)
