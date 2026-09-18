@@ -3,6 +3,7 @@ import { ConfigService } from '@nestjs/config';
 import { AxiosRequestConfig } from 'axios';
 import { firstValueFrom } from 'rxjs';
 import { HttpService } from '@nestjs/axios';
+import { error } from 'console';
 
 type GraphList = { id: string; name: string; displayName: string };
 
@@ -112,12 +113,23 @@ export class GraphRestService {
         `No se encontro la lista "${listName}" en el sitio de SharePoint`,
       );
     }
-
     this.listIdCache.set(listName, list.id);
     return list.id;
   }
 
-  async get<T>(graphToken: string, listName: string, itemId?: string){
+  async getInfoMe(graphToken:string){
+    const path = '/me'
+    const response = await this.call('GET',path, graphToken)
+    return response.data
+  }
+
+  async getPhotoMe(graphToken:string){
+    const path = '/me/photo/$value'
+    const response = await this.call('GET', path, graphToken)
+    return response.data
+  }
+
+  async get(graphToken: string, listName: string, itemId?: string){
     const siteId = await this.getSiteId(graphToken);
     const listId = await this.getListId(graphToken, listName);
     const path = itemId
@@ -127,9 +139,9 @@ export class GraphRestService {
     return response.data;
   }
 
-  async create(
+  async create<T>(
     graphToken: string,
-    fields: Record<string, unknown>,
+    fields: T,
     listName: string,
   ) {
     const siteId = await this.getSiteId(graphToken);
