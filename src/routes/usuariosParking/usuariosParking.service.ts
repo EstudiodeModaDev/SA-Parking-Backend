@@ -43,12 +43,12 @@ export class UsuariosParkingService{
     }
 
     private toModel(response:any):UsuariosParkingDTO{
-            const f = response?.fields ?? {};
-            return {
-                ID : String(response?.id ?? ''),
-                Title: f.Title,
-                Rol: f.Rol,
-                Permitidos : f.Permitidos
-            };
-        }
+        const f = response?.fields ?? {};
+        return {
+            ID : String(response?.id ?? ''),
+            Title: f.Title,
+            Rol: f.Rol,
+            Permitidos : f.Permitidos
+        };
+    }
 }

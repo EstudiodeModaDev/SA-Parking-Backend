@@ -145,7 +145,7 @@ export class GraphRestService {
     const siteId = await this.getSiteId(graphToken);
     const listId = await this.getListId(graphToken, listName);
     // se compara todo en minusculas y se escapan comillas simples para no romper el filtro OData
-    const safeValue = value.toLowerCase().replace(/'/g, "''");
+    const safeValue = value.replace(/'/g, "''");
     const path = `/sites/${siteId}/lists/${listId}/items?$expand=fields&$filter=fields/${column} eq '${safeValue}'`
     // Title no esta indexado en la lista de SharePoint, Graph exige este header para permitir el filtro igual
     const response = await this.call("GET", path, graphToken, undefined, {
@@ -191,10 +191,11 @@ export class GraphRestService {
   async delete(graphToken: string, itemId: string, listName: string) {
     const siteId = await this.getSiteId(graphToken);
     const listId = await this.getListId(graphToken, listName);
-    await this.call(
+    const response = await this.call(
       'DELETE',
       `/sites/${siteId}/lists/${listId}/items/${itemId}`,
       graphToken,
-    );
+    )
+    return response.data;
   }
 }
