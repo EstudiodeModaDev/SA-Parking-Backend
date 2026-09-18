@@ -4,6 +4,7 @@ import { ConfigModule } from '@nestjs/config';
 import { SettingsModule } from './routes/settings/settings.module.js';
 import { UsuariosParkingModule } from './routes/usuariosParking/usuariosParking.module.js';
 import { ColaboradoresModule } from './routes/colaboradores/colaboradores.module.js';
+import { ParkingSlotsModule } from './routes/parkingSlots/parkingSlots.module.js';
 //aqui se deben importar todos los modulos de cada reouter diferente
 
 @Module({
@@ -12,7 +13,8 @@ import { ColaboradoresModule } from './routes/colaboradores/colaboradores.module
     AuthModule,
     SettingsModule,
     UsuariosParkingModule,
-    ColaboradoresModule
+    ColaboradoresModule,
+    ParkingSlotsModule
     // hacer la llamada al modulo correspondiente
   ],
   controllers: [],
