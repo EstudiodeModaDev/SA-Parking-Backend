@@ -1,4 +1,4 @@
-import { Controller, Get , Req, UseGuards, Post, Delete, Param} from '@nestjs/common';
+import { Controller, Get , Req, UseGuards, Post, Delete, Param, Query} from '@nestjs/common';
 import { ColaboradoresService } from './colaboradores.service.js';
 import { OnBehalfOfService } from '../../common/OnBehalfOf/obo.service.js';
 import type { Request } from 'express';
@@ -13,6 +13,13 @@ export class ColaboradoresController {
     async getColaboradoresFijos(@Req() req:Request){
         const graphToken = await this.OBOService.changeToken(req)
         return this.colaboradoresService.getColaboradoresFijos(graphToken)
+    }
+
+    @Get('fijos')
+    @UseGuards(AuthGuard('azure-token'))
+    async getColaboradoresBy(@Query('field') field: string, @Query('value') value:string, @Req() req:Request){
+        const graphToken = await this.OBOService.changeToken(req)
+        return this.colaboradoresService.getColaboradorFijoBy(graphToken, field, value)
     }
 
     @Post('createFijo')

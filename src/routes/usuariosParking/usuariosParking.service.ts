@@ -1,4 +1,4 @@
-import { Injectable } from "@nestjs/common";
+import { HttpException, HttpStatus, Injectable } from "@nestjs/common";
 import { GraphRestService } from "../../common/graph/graphRest.service.js";
 import { UsuariosParkingDTO } from "./dto/usuariosParking.dto.js";
 import { ConfigService } from "@nestjs/config";
@@ -14,6 +14,15 @@ export class UsuariosParkingService{
 
     async getUsuarios(graphToken:string){
         const response = await this.graphRestService.get(graphToken, this.listName)
+        const array = Array.isArray(response?.value) ? response.value : [];
+        return array.map((x: any) => this.toModel(x));
+    }
+
+    async getUsuarioBy(graphToken:string, field:string, value:string){
+        const response = await this.graphRestService.getFiltred(graphToken, this.listName, field, value)
+        if (!response.value[0]) {
+            throw new HttpException('No se encontro un objeto con los filtros', HttpStatus.NOT_FOUND)
+        }
         const array = Array.isArray(response?.value) ? response.value : [];
         return array.map((x: any) => this.toModel(x));
     }

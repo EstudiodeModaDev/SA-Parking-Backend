@@ -1,4 +1,4 @@
-import { Controller, Get, Req, Post, Put, Delete, Param } from '@nestjs/common';
+import { Controller, Get, Req, Post, Put, Delete, Param , Query} from '@nestjs/common';
 import type { Request } from 'express';
 import { UseGuards } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
@@ -18,6 +18,12 @@ export class UsuariosParkingController {
     const graphToken = await this.OBOService.changeToken(req);
     return this.UsuariosService.getUsuarios(graphToken);
   }
+  @Get('getUsers')
+      @UseGuards(AuthGuard('azure-token'))
+      async getUsuariosBy(@Query('field') field: string, @Query('value') value:string, @Req() req:Request){
+          const graphToken = await this.OBOService.changeToken(req)
+          return this.UsuariosService.getUsuarioBy(graphToken, field, value)
+      }
 
   @Post('createUser')
   @UseGuards(AuthGuard('azure-token'))

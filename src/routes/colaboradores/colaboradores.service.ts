@@ -1,4 +1,4 @@
-import { Injectable } from "@nestjs/common";
+import { Injectable, HttpException, HttpStatus } from "@nestjs/common";
 import { GraphRestService } from "../../common/graph/graphRest.service.js";
 import { ConfigService } from "@nestjs/config";
 import { ColaboradorFijoDTO } from './dto/colaboradores.dto.js';
@@ -25,6 +25,15 @@ export class ColaboradoresService{
     async createColaboradorFijo(graphToken:string, data: ColaboradorFijoDTO){
         const response = await this.graphRestService.create(graphToken, data, this.listName)
         return response.fields
+    }
+
+    async getColaboradorFijoBy(graphToken:string, field:string, value:string){
+        const response = await this.graphRestService.getFiltred(graphToken, this.listName, field, value)
+        if (!response.value[0]) {
+            throw new HttpException('No se encontro un objeto con los filtros', HttpStatus.NOT_FOUND)
+        }
+        const array = Array.isArray(response?.value) ? response.value : [];
+        return array.map((x: any) => this.toModel(x));
     }
 
     private toModel(response:any): ColaboradorFijoDTO{
