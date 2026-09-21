@@ -22,11 +22,18 @@ export class ParkingSlotsController {
         return this.parkingSlotService.createSlot(graphToken, req.body)
     }
 
-    @Delete('delSlot/:id')
+    @Put('inactiveSlot/:id')
     @UseGuards(AuthGuard('azure-token'))
-    async deleteSlot(@Req() req : Request, @Param('id') id:string){
+    async InactiveSlot(@Req() req : Request, @Param('id') id:string){
         const graphToken = await this.OBOService.changeToken(req)
-        return this.parkingSlotService.deleteSlot(graphToken, id)
+        return this.parkingSlotService.putSlot(graphToken, id, { Activa : "Inactiva"})
+    }
+
+    @Put('activeSlot/:id')
+    @UseGuards(AuthGuard('azure-token'))
+    async activeSlot(@Req() req : Request, @Param('id') id:string){
+        const graphToken = await this.OBOService.changeToken(req)
+        return this.parkingSlotService.putSlot(graphToken, id, { Activa : "Activa"})
     }
 
     @Put('editSlot/:id')

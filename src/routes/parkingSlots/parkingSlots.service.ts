@@ -2,6 +2,7 @@ import { Injectable } from "@nestjs/common";
 import { GraphRestService } from "../../common/graph/graphRest.service.js";
 import { ConfigService } from "@nestjs/config";
 import { ParkingSlotDTO } from "./dto/ParkingSlots.dto.js";
+import { ParkingSlotDeactivateDTO } from "./dto/ParkingSlots.dto.js";
 @Injectable()
 export class ParkingSlotsService{
     private listName:string
@@ -25,7 +26,7 @@ export class ParkingSlotsService{
         return response
     }
 
-    async putSlot(graphToken:string, id:string, data:ParkingSlotDTO){
+    async putSlot(graphToken:string, id:string, data:ParkingSlotDeactivateDTO){
         const response  = await this.graphRestService.update(graphToken, id, data, this.listName)
         return response
     }
