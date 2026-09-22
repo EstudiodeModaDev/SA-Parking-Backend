@@ -2,6 +2,7 @@ import { HttpException, HttpStatus, Injectable } from "@nestjs/common";
 import { GraphRestService } from "../../common/graph/graphRest.service.js";
 import { UsuariosParkingDTO } from "./dto/usuariosParking.dto.js";
 import { ConfigService } from "@nestjs/config";
+import type { Request } from "express";
 
 @Injectable()
 export class UsuariosParkingService{
@@ -42,13 +43,19 @@ export class UsuariosParkingService{
         return response
     }
 
-    async getRole(graphToken:string, correo : string){
-        const response = await this.graphRestService.getFiltred(graphToken, this.listName, 'Title', correo)
+    async getRole(graphToken:string, req: Request): Promise<"Usuario" | "Admin"> {
+        const response = await this.graphRestService.getFiltred(graphToken, this.listName, 'Title', (req.user as { upn:string}).upn)
         const array = Array.isArray(response?.value) ? response.value : [];
-        const results = array.map((x: any) => this.toModel(x));
-        return {
-            "Rol":results[0].Rol
-        }
+        const results : Array<UsuariosParkingDTO> = array.map((x: any) => this.toModel(x));
+        if (results.length === 0){
+            const groupResponse = await this.graphRestService.getMailList(graphToken, (req.user as { upn:string}).upn)
+            if(groupResponse['@odata.count'] > 0){
+                return "Usuario"
+            }
+            throw new HttpException('El usuario no esta registrado en la app', HttpStatus.UNAUTHORIZED)
+        }else{
+            return (results[0].Rol) as "Usuario" | "Admin"
+        }  
     }
 
     private toModel(response:any):UsuariosParkingDTO{

@@ -8,5 +8,6 @@ import { GraphRestModule } from '../../common/graph/graphRest.module.js';
     imports:[OnBehalfOfModule, GraphRestModule],
     controllers: [UsuariosParkingController],
     providers: [UsuariosParkingService],
+    exports: [UsuariosParkingService],
 })
 export class UsuariosParkingModule {};

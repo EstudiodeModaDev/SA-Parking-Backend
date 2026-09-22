@@ -46,11 +46,11 @@ export class UsuariosParkingController {
     return this.UsuariosService.getInfoPhotoMe(graphToken)
   }
 
-  @Get('getRole/:mail')
+  @Get('getRole/')
   @UseGuards(AuthGuard('azure-token'))
-  async getRoleByMail(@Req() req:Request, @Param('mail') mail:string){
+  async getMyRole(@Req() req:Request){
     const graphToken = await this.OBOService.changeToken(req)
-    return this.UsuariosService.getRole(graphToken, mail)
+    return this.UsuariosService.getRole(graphToken, req)
   }
 
 }
