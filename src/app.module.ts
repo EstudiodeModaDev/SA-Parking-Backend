@@ -6,6 +6,7 @@ import { UsuariosParkingModule } from './routes/usuariosParking/usuariosParking.
 import { ColaboradoresModule } from './routes/colaboradores/colaboradores.module.js';
 import { ParkingSlotsModule } from './routes/parkingSlots/parkingSlots.module.js';
 import { AccessModule } from './common/access/access.module.js';
+import { RegistroVehicularModule } from './routes/registroVehicular/registroVehicular.module.js';
 //aqui se deben importar todos los modulos de cada reouter diferente
 
 @Module({
@@ -15,7 +16,8 @@ import { AccessModule } from './common/access/access.module.js';
     SettingsModule,
     UsuariosParkingModule,
     ColaboradoresModule,
-    ParkingSlotsModule
+    ParkingSlotsModule,
+    RegistroVehicularModule
     // hacer la llamada al modulo correspondiente
   ],
   controllers: [],
