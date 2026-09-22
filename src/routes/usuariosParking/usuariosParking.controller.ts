@@ -11,7 +11,7 @@ import {
   HttpStatus,
 } from '@nestjs/common';
 import type { Request } from 'express';
-import { UseGuards } from '@nestjs/common';
+import { forwardRef, Inject, UseGuards } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { OnBehalfOfService } from '../../common/OnBehalfOf/obo.service.js';
 import { UsuariosParkingService } from './usuariosParking.service.js';
@@ -22,6 +22,7 @@ export class UsuariosParkingController {
   constructor(
     private readonly OBOService: OnBehalfOfService,
     private readonly UsuariosService: UsuariosParkingService,
+    @Inject(forwardRef(() => AccessService))
     private readonly accessService: AccessService,
   ) {}
 
