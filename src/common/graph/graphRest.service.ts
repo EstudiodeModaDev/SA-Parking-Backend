@@ -10,7 +10,7 @@ type GraphList = { id: string; name: string; displayName: string };
 @Injectable()
 export class GraphRestService {
   private readonly graphBaseUrl = 'https://graph.microsoft.com/v1.0';
-
+  private readonly groupID : string
   // se cachean en memoria porque no cambian mientras el proceso sigue vivo,
   // asi se evita resolverlos en cada request
   private siteId: string | null = null;
@@ -19,7 +19,9 @@ export class GraphRestService {
   constructor(
     private readonly httpService: HttpService,
     private readonly configService: ConfigService,
-  ) {}
+  ) {
+    this.groupID = this.configService.get<string>('OUTLOOK_GROUP_ID') ?? '';
+  }
 
   private async call<T = any>(
     method: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE',
@@ -119,19 +121,19 @@ export class GraphRestService {
     return list.id;
   }
 
-  async getInfoMe(graphToken:string){
-    const path = '/me'
-    const response = await this.call('GET',path, graphToken)
-    return response.data
+  async getInfoMe(graphToken: string) {
+    const path = '/me';
+    const response = await this.call('GET', path, graphToken);
+    return response.data;
   }
 
-  async getPhotoMe(graphToken:string){
-    const path = '/me/photo/$value'
-    const response = await this.call('GET', path, graphToken)
-    return response.data
+  async getPhotoMe(graphToken: string) {
+    const path = '/me/photo/$value';
+    const response = await this.call('GET', path, graphToken);
+    return response.data;
   }
 
-  async get(graphToken: string, listName: string, itemId?: string){
+  async get(graphToken: string, listName: string, itemId?: string) {
     const siteId = await this.getSiteId(graphToken);
     const listId = await this.getListId(graphToken, listName);
     const path = itemId
@@ -141,24 +143,25 @@ export class GraphRestService {
     return response.data;
   }
 
-  async getFiltred(graphToken:string, listName:string, column:string, value:string){
+  async getFiltred(
+    graphToken: string,
+    listName: string,
+    column: string,
+    value: string,
+  ) {
     const siteId = await this.getSiteId(graphToken);
     const listId = await this.getListId(graphToken, listName);
     // se compara todo en minusculas y se escapan comillas simples para no romper el filtro OData
     const safeValue = value.replace(/'/g, "''");
-    const path = `/sites/${siteId}/lists/${listId}/items?$expand=fields&$filter=fields/${column} eq '${safeValue}'`
+    const path = `/sites/${siteId}/lists/${listId}/items?$expand=fields&$filter=fields/${column} eq '${safeValue}'`;
     // Title no esta indexado en la lista de SharePoint, Graph exige este header para permitir el filtro igual
-    const response = await this.call("GET", path, graphToken, undefined, {
+    const response = await this.call('GET', path, graphToken, undefined, {
       Prefer: 'HonorNonIndexedQueriesWarningMayFailRandomly',
-    })
-    return response.data
+    });
+    return response.data;
   }
 
-  async create<T>(
-    graphToken: string,
-    fields: T,
-    listName: string,
-  ) {
+  async create<T>(graphToken: string, fields: T, listName: string) {
     const siteId = await this.getSiteId(graphToken);
     const listId = await this.getListId(graphToken, listName);
     const response = await this.call(
@@ -195,7 +198,18 @@ export class GraphRestService {
       'DELETE',
       `/sites/${siteId}/lists/${listId}/items/${itemId}`,
       graphToken,
-    )
+    );
     return response.data;
+  }
+
+  async getMailList(graphToken: string, filteredEmail?: string) {
+    let path = `/groups/${this.groupID}/transitiveMembers`
+    if (filteredEmail !== undefined) {
+      path = `/groups/${this.groupID}/transitiveMembers/microsoft.graph.user?$filter=mail eq '${filteredEmail}'&$count=true`;
+    }
+    const response = await this.call('GET', path, graphToken,undefined, {
+      "ConsistencyLevel" : "eventual"
+    })
+    return response.data
   }
 }
