@@ -28,7 +28,7 @@ export class ParkingSlotsController {
   @UseGuards(AuthGuard('azure-token'))
   async getSlots(@Req() req: Request) {
     const graphToken = await this.OBOService.changeToken(req);
-    const allowedRoles = ['Admin'] as Array<'Usuario' | 'Admin'>;
+    const allowedRoles = ['Admin', 'Admin'] as Array<'Usuario' | 'Admin'>;
     if (!(await this.accessService.hasAccess(req, graphToken, allowedRoles)))
       throw new HttpException(
         'El usuario no tiene acceso',
