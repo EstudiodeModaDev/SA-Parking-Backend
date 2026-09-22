@@ -5,6 +5,7 @@ import { SettingsModule } from './routes/settings/settings.module.js';
 import { UsuariosParkingModule } from './routes/usuariosParking/usuariosParking.module.js';
 import { ColaboradoresModule } from './routes/colaboradores/colaboradores.module.js';
 import { ParkingSlotsModule } from './routes/parkingSlots/parkingSlots.module.js';
+import { AccessModule } from './common/access/access.module.js';
 //aqui se deben importar todos los modulos de cada reouter diferente
 
 @Module({

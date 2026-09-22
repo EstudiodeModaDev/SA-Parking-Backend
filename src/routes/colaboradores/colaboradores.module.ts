@@ -3,8 +3,9 @@ import { ColaboradoresService } from './colaboradores.service.js';
 import { ColaboradoresController } from './colaboradores.controller.js';
 import { GraphRestModule } from '../../common/graph/graphRest.module.js';
 import { OnBehalfOfModule } from '../../common/OnBehalfOf/obo.module.js';
+import { AccessModule } from '../../common/access/access.module.js';
 @Module({
-    imports:[GraphRestModule, OnBehalfOfModule],
+    imports:[GraphRestModule, OnBehalfOfModule, AccessModule],
     controllers: [ColaboradoresController],
     providers: [ColaboradoresService],
 })
