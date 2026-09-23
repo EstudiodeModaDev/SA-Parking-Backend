@@ -5,8 +5,8 @@ import { SettingsModule } from './routes/settings/settings.module.js';
 import { UsuariosParkingModule } from './routes/usuariosParking/usuariosParking.module.js';
 import { ColaboradoresModule } from './routes/colaboradores/colaboradores.module.js';
 import { ParkingSlotsModule } from './routes/parkingSlots/parkingSlots.module.js';
-import { AccessModule } from './common/access/access.module.js';
 import { RegistroVehicularModule } from './routes/registroVehicular/registroVehicular.module.js';
+import { ReservasModule } from './routes/reservas/reservas.module.js';
 //aqui se deben importar todos los modulos de cada reouter diferente
 
 @Module({
@@ -17,7 +17,8 @@ import { RegistroVehicularModule } from './routes/registroVehicular/registroVehi
     UsuariosParkingModule,
     ColaboradoresModule,
     ParkingSlotsModule,
-    RegistroVehicularModule
+    RegistroVehicularModule,
+    ReservasModule
     // hacer la llamada al modulo correspondiente
   ],
   controllers: [],
