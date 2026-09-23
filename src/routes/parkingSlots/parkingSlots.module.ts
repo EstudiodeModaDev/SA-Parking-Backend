@@ -9,5 +9,6 @@ import { AccessModule } from '../../common/access/access.module.js';
     imports:[GraphRestModule, OnBehalfOfModule, AccessModule],
     controllers: [ParkingSlotsController],
     providers: [ParkingSlotsService],
+    exports: [ParkingSlotsService]
 })
 export class ParkingSlotsModule {};
