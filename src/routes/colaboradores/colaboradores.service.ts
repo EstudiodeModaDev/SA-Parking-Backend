@@ -28,7 +28,7 @@ export class ColaboradoresService{
     }
 
     async getColaboradorFijoBy(graphToken:string, field:string, value:string){
-        const response = await this.graphRestService.getFiltred(graphToken, this.listName, field, value)
+        const response = await this.graphRestService.getFiltred(graphToken, this.listName, [{field: field, value:value}])
         if (!response.value[0]) {
             throw new HttpException('No se encontro un objeto con los filtros', HttpStatus.NOT_FOUND)
         }

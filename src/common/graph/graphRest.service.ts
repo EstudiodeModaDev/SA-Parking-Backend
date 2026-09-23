@@ -1,9 +1,10 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { AxiosRequestConfig } from 'axios';
-import { firstValueFrom } from 'rxjs';
+import { filter, firstValueFrom } from 'rxjs';
 import { HttpService } from '@nestjs/axios';
 import { error } from 'console';
+import { FiltersDTO } from './dto/graphRestFilter.dto.js';
 
 type GraphList = { id: string; name: string; displayName: string };
 
@@ -146,14 +147,20 @@ export class GraphRestService {
   async getFiltred(
     graphToken: string,
     listName: string,
-    column: string,
-    value: string,
+    filters: Array<FiltersDTO>,
   ) {
     const siteId = await this.getSiteId(graphToken);
     const listId = await this.getListId(graphToken, listName);
-    // se compara todo en minusculas y se escapan comillas simples para no romper el filtro OData
-    const safeValue = value.replace(/'/g, "''");
-    const path = `/sites/${siteId}/lists/${listId}/items?$expand=fields&$filter=fields/${column} eq '${safeValue}'`;
+    let filterPath = `$filter=fields/${filters[0].field} eq '${filters[0].value}'`
+    if ( filters.length>1){
+      // si hay mas de un filtro en el array agrega cada filtro con and
+      for (const filter of filters ){
+        // se compara todo en minusculas y se escapan comillas simples para no romper el filtro OData
+        const safeValue = filter.value.replace(/'/g, "''");
+        filterPath += ` and fields/${filter.field} eq '${safeValue}'`
+      }
+    }
+    const path = `/sites/${siteId}/lists/${listId}/items?$expand=fields&${filterPath}`;
     // Title no esta indexado en la lista de SharePoint, Graph exige este header para permitir el filtro igual
     const response = await this.call('GET', path, graphToken, undefined, {
       Prefer: 'HonorNonIndexedQueriesWarningMayFailRandomly',
