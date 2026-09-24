@@ -86,4 +86,56 @@ export class ColaboradoresController {
       );
     return this.colaboradoresService.deleteColaboradorFijo(graphToken, id);
   }
+
+  @Get('mailList')
+  @UseGuards(AuthGuard('azure-token'))
+  async getMailList(@Req() req: Request) {
+    const graphToken = await this.OBOService.changeToken(req);
+    const allowedRoles = ['Admin'] as Array<'Usuario' | 'Admin'>;
+    if (!(await this.accessService.hasAccess(req, graphToken, allowedRoles)))
+      throw new HttpException(
+        'El usuario no tiene acceso',
+        HttpStatus.UNAUTHORIZED,
+      );
+    return this.colaboradoresService.getUserGroup(graphToken);
+  }
+
+  @Get('userBy')
+  @UseGuards(AuthGuard('azure-token'))
+  async getUserFromGroup(@Req() req: Request, @Query('email') email : string) {
+    const graphToken = await this.OBOService.changeToken(req);
+    const allowedRoles = ['Admin'] as Array<'Usuario' | 'Admin'>;
+    if (!(await this.accessService.hasAccess(req, graphToken, allowedRoles)))
+      throw new HttpException(
+        'El usuario no tiene acceso',
+        HttpStatus.UNAUTHORIZED,
+      );
+    return this.colaboradoresService.getUserFromGroup(graphToken, email);
+  }
+
+  @Post('addUser')
+  @UseGuards(AuthGuard('azure-token'))
+  async addUserGroup(@Req() req: Request,@Query('email') email : string){
+    const graphToken = await this.OBOService.changeToken(req);
+    const allowedRoles = ['Admin'] as Array<'Usuario' | 'Admin'>;
+    if (!(await this.accessService.hasAccess(req, graphToken, allowedRoles)))
+      throw new HttpException(
+        'El usuario no tiene acceso',
+        HttpStatus.UNAUTHORIZED,
+      );
+    return this.colaboradoresService.addUserGroup(graphToken, email);
+  }
+
+  @Delete('remove')
+  @UseGuards(AuthGuard('azure-token'))
+  async removeUserGroup(@Req() req: Request,@Query('email') email : string){
+    const graphToken = await this.OBOService.changeToken(req);
+    const allowedRoles = ['Admin'] as Array<'Usuario' | 'Admin'>;
+    if (!(await this.accessService.hasAccess(req, graphToken, allowedRoles)))
+      throw new HttpException(
+        'El usuario no tiene acceso',
+        HttpStatus.UNAUTHORIZED,
+      );
+    return this.colaboradoresService.removeUserGroup(graphToken, email);
+  }
 }

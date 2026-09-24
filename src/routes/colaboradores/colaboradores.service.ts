@@ -36,6 +36,27 @@ export class ColaboradoresService{
         return array.map((x: any) => this.toModel(x));
     }
 
+    async getUserGroup(graphToken:string){
+        const response = await this.graphRestService.getMailList(graphToken)
+        return response.value
+
+    }
+
+    async getUserFromGroup(graphToken:string, mail:string){
+        const response = await this.graphRestService.getMailList(graphToken, mail)
+        return response.value
+    }
+
+    async addUserGroup(graphToken:string, mail:string){
+        const response = await this.graphRestService.addMailList(graphToken, mail)
+        return response
+    }
+
+    async removeUserGroup(graphToken:string, mail:string){
+        const response = await this.graphRestService.removeMailList(graphToken,mail)
+        return response
+    }
+
     private toModel(response:any): ColaboradorFijoDTO{
         const f = response?.fields ?? {};
         return{

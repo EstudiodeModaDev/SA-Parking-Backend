@@ -219,4 +219,26 @@ export class GraphRestService {
     })
     return response.data
   }
+
+  async addMailList(graphToken:string, mail:string){
+    let path = `/users?$filter=mail eq '${mail}'&$select=id`
+    let response = await this.call('GET', path, graphToken)
+    const userId = response.data.value[0].id
+
+    path = `/groups/${this.groupID}/members/$ref`
+    response = await this.call("POST",path,graphToken, {"@odata.id":`${this.graphBaseUrl}/directoryObjects/${userId}`})
+    return response.data
+  }
+
+  async removeMailList(graphToken:string, mail:string){
+    let path = `/users?$filter=mail eq '${mail}'&$select=id`
+    let response = await this.call('GET', path, graphToken)
+    const userId = response.data.value[0].id
+
+    path = `/groups/${this.groupID}/members/${userId}/$ref`
+    response = await this.call("DELETE",path,graphToken)
+    return response.data
+
+  }
+
 }
