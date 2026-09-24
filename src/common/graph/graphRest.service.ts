@@ -241,4 +241,10 @@ export class GraphRestService {
 
   }
 
+  async getAllWorkers(graphToken:string){
+    const path = `/users`
+    const response = await this.call("GET", path, graphToken)
+    return response.data
+  }
+
 }

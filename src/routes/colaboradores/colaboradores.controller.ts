@@ -138,4 +138,17 @@ export class ColaboradoresController {
       );
     return this.colaboradoresService.removeUserGroup(graphToken, email);
   }
+
+  @Get('all')
+  @UseGuards(AuthGuard('azure-token'))
+  async getAllUsers(@Req() req:Request){
+    const graphToken = await this.OBOService.changeToken(req);
+    const allowedRoles = ['Admin'] as Array<'Usuario' | 'Admin'>;
+    if (!(await this.accessService.hasAccess(req, graphToken, allowedRoles)))
+      throw new HttpException(
+        'El usuario no tiene acceso',
+        HttpStatus.UNAUTHORIZED,
+      );
+    return this.colaboradoresService.getAllUsers(graphToken)    
+  }
 }

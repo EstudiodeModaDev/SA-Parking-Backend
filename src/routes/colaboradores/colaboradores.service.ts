@@ -57,6 +57,11 @@ export class ColaboradoresService{
         return response
     }
 
+    async getAllUsers(graphToken:string){
+        const response = await this.graphRestService.getAllWorkers(graphToken)
+        return  response.value
+    }
+
     private toModel(response:any): ColaboradorFijoDTO{
         const f = response?.fields ?? {};
         return{
