@@ -1,4 +1,4 @@
-import { HttpException, HttpStatus, Injectable, NotFoundException } from '@nestjs/common';
+import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { AxiosRequestConfig } from 'axios';
 import { filter, firstValueFrom } from 'rxjs';
@@ -72,7 +72,7 @@ export class GraphRestService {
 
     const siteUrl = this.configService.get<string>('SHARE_POINT_SITE_URL');
     if (!siteUrl) {
-      throw new Error('Falta configurar SHARE_POINT_SITE_URL');
+      throw new HttpException('Falta configurar SHARE_POINT_SITE_URL', HttpStatus.INTERNAL_SERVER_ERROR);
     }
 
     const { hostname, pathname } = new URL(siteUrl);
@@ -114,8 +114,9 @@ export class GraphRestService {
       (l) => l.displayName === listName || l.name === listName,
     );
     if (!list) {
-      throw new NotFoundException(
+      throw new HttpException(
         `No se encontro la lista "${listName}" en el sitio de SharePoint`,
+        HttpStatus.NOT_FOUND,
       );
     }
     this.listIdCache.set(listName, list.id);

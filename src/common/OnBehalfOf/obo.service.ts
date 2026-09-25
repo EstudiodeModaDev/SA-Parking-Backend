@@ -35,6 +35,8 @@ export class OnBehalfOfService {
         headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, // en los headers se le agrega content type para que no rechace la coneccion
       }),
     );
+    // se guarda en la request para que el filtro de logs pueda escribir en SharePoint si el endpoint falla
+    (req as any).graphToken = response.data.access_token;
     return response.data.access_token;
   }
 }

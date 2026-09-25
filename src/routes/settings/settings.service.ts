@@ -1,4 +1,4 @@
-import { Injectable } from "@nestjs/common";
+import { HttpException, HttpStatus, Injectable } from "@nestjs/common";
 import { GraphRestService } from "../../common/graph/graphRest.service.js";
 import { SettingsDTO } from "./dto/settings.dto.js";
 import { ConfigService } from "@nestjs/config";
@@ -22,7 +22,7 @@ export class settingsService{
         let itemsList: SettingsDTO[]= await this.getSettings(graphToken)
         let itemSearched: SettingsDTO | undefined = itemsList.find( item => item.ID == "1")
         //Manejo de errores
-        if (itemSearched == undefined) throw new Error("No se encontro el objeto especificado")
+        if (itemSearched == undefined) throw new HttpException("No se encontro el objeto especificado", HttpStatus.NOT_FOUND)
         let response = await this.graphRestService.update(graphToken, itemSearched?.ID,data,this.listName )
         return response
     }

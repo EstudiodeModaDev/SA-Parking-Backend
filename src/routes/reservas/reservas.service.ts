@@ -1,4 +1,4 @@
-import { BadRequestException, ConflictException, Injectable, NotFoundException } from '@nestjs/common';
+import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
 import { GraphRestService } from '../../common/graph/graphRest.service.js';
 import { ConfigService } from '@nestjs/config';
 import { ReservasDTO } from './dto/reservas.dto.js';
@@ -147,7 +147,7 @@ export class reservasService {
   async cancelUsr(graphToken:string, id:string, email:string){
     const listUserReserv = await this.getUserActive(graphToken, email) as ReservasDTO[]
     if(listUserReserv.find(reserv => reserv.ID === id) === undefined) 
-      throw new BadRequestException('La reserva no pertenece a este usuario o ya esta cancelada')
+      throw new HttpException('La reserva no pertenece a este usuario o ya esta cancelada', HttpStatus.BAD_REQUEST)
     else
       return this.graphRestService.update(graphToken, id,{'Status': 'Cancelada'}, this.listName )
   }
@@ -155,37 +155,37 @@ export class reservasService {
   // devuelve la fecha de la reserva normalizada a YYYY-MM-DD
   private validarDatosReserva(sended:any): string{
     if(!esTurnoValido(sended?.Turn)){
-        throw new BadRequestException(`Turno invalido, debe ser uno de: ${TURNOS.join(', ')}`)
+        throw new HttpException(`Turno invalido, debe ser uno de: ${TURNOS.join(', ')}`, HttpStatus.BAD_REQUEST)
     }
     if(sended?.VehicleType !== 'Carro' && sended?.VehicleType !== 'Moto'){
-        throw new BadRequestException('Tipo de vehiculo invalido, debe ser Carro o Moto')
+        throw new HttpException('Tipo de vehiculo invalido, debe ser Carro o Moto', HttpStatus.BAD_REQUEST)
     }
     const fecha = normalizarFecha(sended?.Date)
     if(!fecha){
-        throw new BadRequestException('Fecha invalida, debe tener formato YYYY-MM-DD')
+        throw new HttpException('Fecha invalida, debe tener formato YYYY-MM-DD', HttpStatus.BAD_REQUEST)
     }
     if(fecha < fechaHoy()){
-        throw new BadRequestException('No se puede reservar en una fecha pasada')
+        throw new HttpException('No se puede reservar en una fecha pasada', HttpStatus.BAD_REQUEST)
     }
     return fecha
   }
 
   private async validarCeldaPuntual(graphToken:string, spotId:string, vehicleType: ReservasDTO['VehicleType'], turn: ReservasDTO['Turn'], fecha: string){
     if(!spotId){
-        throw new BadRequestException('Debe indicar la celda (SpotId) a reservar')
+        throw new HttpException('Debe indicar la celda (SpotId) a reservar', HttpStatus.BAD_REQUEST)
     }
     const slot = await this.slotsService.getSlotByTitle(graphToken, spotId, fecha)
     if(!slot){
-        throw new NotFoundException(`La celda ${spotId} no existe`)
+        throw new HttpException(`La celda ${spotId} no existe`, HttpStatus.NOT_FOUND)
     }
     if(slot.Activa !== 'Activa'){
-        throw new ConflictException(`La celda ${spotId} no esta activa`)
+        throw new HttpException(`La celda ${spotId} no esta activa`, HttpStatus.CONFLICT)
     }
     if(slot.TipoCelda !== vehicleType){
-        throw new BadRequestException(`La celda ${spotId} es para ${slot.TipoCelda}, no se puede reservar para ${vehicleType}`)
+        throw new HttpException(`La celda ${spotId} es para ${slot.TipoCelda}, no se puede reservar para ${vehicleType}`, HttpStatus.BAD_REQUEST)
     }
     if(!turnoDisponible(slot.Ocupacion, turn)){
-        throw new ConflictException(`La celda ${spotId} ya esta reservada para el turno ${turn} el ${fecha}`)
+        throw new HttpException(`La celda ${spotId} ya esta reservada para el turno ${turn} el ${fecha}`, HttpStatus.CONFLICT)
     }
   }
 
@@ -194,7 +194,7 @@ export class reservasService {
     // solo celdas del tipo de vehiculo solicitado que esten libres en el turno solicitado
     const libres = arraySlots.filter(slot => slot.TipoCelda === vehicleType && turnoDisponible(slot.Ocupacion, turn))
     if(libres.length === 0){
-        throw new ConflictException(`No hay celdas disponibles para ${vehicleType} en el turno ${turn} el ${fecha}`)
+        throw new HttpException(`No hay celdas disponibles para ${vehicleType} en el turno ${turn} el ${fecha}`, HttpStatus.CONFLICT)
     }
     const random = Math.floor(Math.random()*libres.length)
     return libres[random].Title

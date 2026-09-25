@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from "@nestjs/common";
+import { HttpException, HttpStatus, Injectable } from "@nestjs/common";
 import { GraphRestService } from "../../common/graph/graphRest.service.js";
 import { ConfigService } from "@nestjs/config";
 import { ParkingSlotDTO } from "./dto/ParkingSlots.dto.js";
@@ -70,7 +70,7 @@ export class ParkingSlotsService{
         try{
             item = await this.graphRestService.get(graphToken, this.listName, id)
         }catch(error: any){
-            if(error?.response?.status === 404) throw new NotFoundException(`La celda con id ${id} no existe`)
+            if(error?.response?.status === 404) throw new HttpException(`La celda con id ${id} no existe`, HttpStatus.NOT_FOUND)
             throw error
         }
         const title = item?.fields?.Title
