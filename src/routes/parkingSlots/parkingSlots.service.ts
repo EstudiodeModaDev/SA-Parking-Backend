@@ -26,6 +26,7 @@ export class ParkingSlotsService{
             slot.Ocupacion = ocupacion.get(slot.Title) ?? { Manana: false, Tarde: false }
             return slot
         });
+        
     }
 
     async getSlotByTitle(graphToken: string, title: string, date: string): Promise<ParkingSlotDTO | null>{
