@@ -5,6 +5,7 @@ import { ReservasDTO } from './dto/reservas.dto.js';
 import { ParkingSlotsService } from '../parkingSlots/parkingSlots.service.js';
 import { ParkingSlotDTO } from '../parkingSlots/dto/ParkingSlots.dto.js';
 import { esTurnoValido, TURNOS, turnoDisponible } from '../parkingSlots/turnos.js';
+import { fechaHoy, normalizarFecha } from '../parkingSlots/fechas.js';
 
 @Injectable()
 export class reservasService {
@@ -57,8 +58,8 @@ export class reservasService {
   }
 
   async createQuickUsuario(graphToken: string, sended: any, email:string, name:string) {
-    this.validarDatosReserva(sended)
-    const SpotId = await this.reservRandomSlot(graphToken, sended.VehicleType, sended.Turn)
+    const fecha = this.validarDatosReserva(sended)
+    const SpotId = await this.reservRandomSlot(graphToken, sended.VehicleType, sended.Turn, fecha)
     const data = {
         Title : email,
         NombreUsuario : name,
@@ -79,8 +80,8 @@ export class reservasService {
   }
 
   async createQuickAdmin(graphToken:string, sended:any){
-    this.validarDatosReserva(sended)
-    const SpotId = await this.reservRandomSlot(graphToken, sended.VehicleType, sended.Turn)
+    const fecha = this.validarDatosReserva(sended)
+    const SpotId = await this.reservRandomSlot(graphToken, sended.VehicleType, sended.Turn, fecha)
     const data = {
         Title : sended.Title,
         NombreUsuario : sended.NombreUsuario,
@@ -101,8 +102,8 @@ export class reservasService {
   }
 
   async createPuntualUsr(graphToken:string, sended:any, email:string, name:string){
-    this.validarDatosReserva(sended)
-    await this.validarCeldaPuntual(graphToken, sended.SpotId, sended.VehicleType, sended.Turn)
+    const fecha = this.validarDatosReserva(sended)
+    await this.validarCeldaPuntual(graphToken, sended.SpotId, sended.VehicleType, sended.Turn, fecha)
     let data = {
       Title : email,
       NombreUsuario : name,
@@ -122,8 +123,8 @@ export class reservasService {
     return response.fields;
   }
   async createPuntualAdm(graphToken:string, sended:any){
-    this.validarDatosReserva(sended)
-    await this.validarCeldaPuntual(graphToken, sended.SpotId, sended.VehicleType, sended.Turn)
+    const fecha = this.validarDatosReserva(sended)
+    await this.validarCeldaPuntual(graphToken, sended.SpotId, sended.VehicleType, sended.Turn, fecha)
     let data = {
       Title : sended.Title,
       NombreUsuario : sended.NombreUsuario,
@@ -143,9 +144,6 @@ export class reservasService {
     return response.fields;
   }
 
-  async cancelAdmin(graphToken:string, id:string){
-    return this.graphRestService.update(graphToken, id, {'Status': 'Cancelada'}, this.listName)
-  }
   async cancelUsr(graphToken:string, id:string, email:string){
     const listUserReserv = await this.getUserActive(graphToken, email) as ReservasDTO[]
     if(listUserReserv.find(reserv => reserv.ID === id) === undefined) 
@@ -154,20 +152,29 @@ export class reservasService {
       return this.graphRestService.update(graphToken, id,{'Status': 'Cancelada'}, this.listName )
   }
 
-  private validarDatosReserva(sended:any){
+  // devuelve la fecha de la reserva normalizada a YYYY-MM-DD
+  private validarDatosReserva(sended:any): string{
     if(!esTurnoValido(sended?.Turn)){
         throw new BadRequestException(`Turno invalido, debe ser uno de: ${TURNOS.join(', ')}`)
     }
     if(sended?.VehicleType !== 'Carro' && sended?.VehicleType !== 'Moto'){
         throw new BadRequestException('Tipo de vehiculo invalido, debe ser Carro o Moto')
     }
+    const fecha = normalizarFecha(sended?.Date)
+    if(!fecha){
+        throw new BadRequestException('Fecha invalida, debe tener formato YYYY-MM-DD')
+    }
+    if(fecha < fechaHoy()){
+        throw new BadRequestException('No se puede reservar en una fecha pasada')
+    }
+    return fecha
   }
 
-  private async validarCeldaPuntual(graphToken:string, spotId:string, vehicleType: ReservasDTO['VehicleType'], turn: ReservasDTO['Turn']){
+  private async validarCeldaPuntual(graphToken:string, spotId:string, vehicleType: ReservasDTO['VehicleType'], turn: ReservasDTO['Turn'], fecha: string){
     if(!spotId){
         throw new BadRequestException('Debe indicar la celda (SpotId) a reservar')
     }
-    const slot = await this.slotsService.getSlotByTitle(graphToken, spotId)
+    const slot = await this.slotsService.getSlotByTitle(graphToken, spotId, fecha)
     if(!slot){
         throw new NotFoundException(`La celda ${spotId} no existe`)
     }
@@ -178,16 +185,16 @@ export class reservasService {
         throw new BadRequestException(`La celda ${spotId} es para ${slot.TipoCelda}, no se puede reservar para ${vehicleType}`)
     }
     if(!turnoDisponible(slot.Ocupacion, turn)){
-        throw new ConflictException(`La celda ${spotId} ya esta reservada para el turno ${turn}`)
+        throw new ConflictException(`La celda ${spotId} ya esta reservada para el turno ${turn} el ${fecha}`)
     }
   }
 
-  private async reservRandomSlot(graphToken:string, vehicleType: ReservasDTO['VehicleType'], turn: ReservasDTO['Turn']){
-    const arraySlots: Array<ParkingSlotDTO> = await this.slotsService.getParkingSlots(graphToken)
+  private async reservRandomSlot(graphToken:string, vehicleType: ReservasDTO['VehicleType'], turn: ReservasDTO['Turn'], fecha: string){
+    const arraySlots: Array<ParkingSlotDTO> = await this.slotsService.getParkingSlots(graphToken, fecha)
     // solo celdas del tipo de vehiculo solicitado que esten libres en el turno solicitado
     const libres = arraySlots.filter(slot => slot.TipoCelda === vehicleType && turnoDisponible(slot.Ocupacion, turn))
     if(libres.length === 0){
-        throw new ConflictException(`No hay celdas disponibles para ${vehicleType} en el turno ${turn}`)
+        throw new ConflictException(`No hay celdas disponibles para ${vehicleType} en el turno ${turn} el ${fecha}`)
     }
     const random = Math.floor(Math.random()*libres.length)
     return libres[random].Title

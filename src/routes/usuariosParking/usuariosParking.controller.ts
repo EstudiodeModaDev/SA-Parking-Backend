@@ -38,7 +38,7 @@ export class UsuariosParkingController {
       );
     return this.UsuariosService.getUsuarios(graphToken);
   }
-  @Get('getUsers')
+  @Get('getUsersBy')
   @UseGuards(AuthGuard('azure-token'))
   async getUsuariosBy(
     @Query('field') field: string,

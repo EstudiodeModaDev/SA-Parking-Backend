@@ -36,11 +36,11 @@ export class RegistroVehicularService{
         const f = response?.fields ?? {};
         return{
             ID : String(response?.id ?? ''),
-            Title : response.Title,
-            Cedula: response.Cedula,
-            TipoVeh : response.Ttile,
-            PlacaVeh: response.PlacaVeh,
-            CorreoReporte: response.CorreoReporte
+            Title : f.Title,
+            Cedula: f.Cedula,
+            TipoVeh : f.TipoVeh,
+            PlacaVeh: f.PlacaVeh,
+            CorreoReporte: f.CorreoReporte
         }
     }
 

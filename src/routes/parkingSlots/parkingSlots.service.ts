@@ -1,9 +1,10 @@
-import { Injectable } from "@nestjs/common";
+import { Injectable, NotFoundException } from "@nestjs/common";
 import { GraphRestService } from "../../common/graph/graphRest.service.js";
 import { ConfigService } from "@nestjs/config";
 import { ParkingSlotDTO } from "./dto/ParkingSlots.dto.js";
 import { ParkingSlotDeactivateDTO } from "./dto/ParkingSlots.dto.js";
 import { OcupacionTurnos, ocuparTurno } from "./turnos.js";
+import { normalizarFecha } from "./fechas.js";
 @Injectable()
 export class ParkingSlotsService{
     private listName:string
@@ -13,10 +14,11 @@ export class ParkingSlotsService{
         this.reservasListName = String(configService.get('RESERVAS_LIST_NAME'))
     }
 
-    async getParkingSlots(graphToken: string): Promise<Array<ParkingSlotDTO>>{
+    // date en formato YYYY-MM-DD; la ocupacion solo considera las reservas de ese dia
+    async getParkingSlots(graphToken: string, date: string): Promise<Array<ParkingSlotDTO>>{
         const [response, ocupacion] = await Promise.all([
             this.graphRestService.getFiltred(graphToken,this.listName,[{field : "Activa", value: "Activa" }]),
-            this.getOcupacion(graphToken),
+            this.getOcupacion(graphToken, date),
         ])
         const array = Array.isArray(response?.value) ? response.value : [];
         return array.map((x: any) => {
@@ -26,10 +28,10 @@ export class ParkingSlotsService{
         });
     }
 
-    async getSlotByTitle(graphToken: string, title: string): Promise<ParkingSlotDTO | null>{
+    async getSlotByTitle(graphToken: string, title: string, date: string): Promise<ParkingSlotDTO | null>{
         const [response, ocupacion] = await Promise.all([
             this.graphRestService.getFiltred(graphToken,this.listName,[{field : "Title", value: title }]),
-            this.getOcupacion(graphToken, title),
+            this.getOcupacion(graphToken, date, title),
         ])
         const array = Array.isArray(response?.value) ? response.value : [];
         if(array.length === 0) return null
@@ -38,8 +40,8 @@ export class ParkingSlotsService{
         return slot
     }
 
-    // ocupacion por turno de cada celda segun las reservas activas (SpotId = Title de la celda)
-    private async getOcupacion(graphToken: string, spotId?: string): Promise<Map<string, OcupacionTurnos>>{
+    // ocupacion por turno de cada celda segun las reservas activas del dia indicado (SpotId = Title de la celda)
+    private async getOcupacion(graphToken: string, date: string, spotId?: string): Promise<Map<string, OcupacionTurnos>>{
         const filters = [{ field: "Status", value: "Activa" }]
         if(spotId) filters.push({ field: "SpotId", value: spotId })
         const response = await this.graphRestService.getFiltred(graphToken, this.reservasListName, filters)
@@ -48,6 +50,8 @@ export class ParkingSlotsService{
         for(const item of array){
             const f = item?.fields ?? {}
             if(!f.SpotId) continue
+            // la fecha se compara aqui y no en el filtro OData porque SharePoint la guarda en UTC
+            if(normalizarFecha(f.Date) !== date) continue
             const actual = ocupacion.get(f.SpotId) ?? { Manana: false, Tarde: false }
             ocuparTurno(actual, f.Turn)
             ocupacion.set(f.SpotId, actual)
@@ -60,9 +64,30 @@ export class ParkingSlotsService{
         return response
     }
 
+    // antes de eliminar la celda se cancelan sus reservas activas, para que no queden apuntando a una celda que no existe
     async deleteSlot(graphToken:string, id:string){
-        const response = await this.graphRestService.delete(graphToken, id, this.listName)
-        return response
+        let item: any
+        try{
+            item = await this.graphRestService.get(graphToken, this.listName, id)
+        }catch(error: any){
+            if(error?.response?.status === 404) throw new NotFoundException(`La celda con id ${id} no existe`)
+            throw error
+        }
+        const title = item?.fields?.Title
+        let reservasCanceladas = 0
+        if(title){
+            const reservas = await this.graphRestService.getFiltred(graphToken, this.reservasListName, [
+                { field: "Status", value: "Activa" },
+                { field: "SpotId", value: title },
+            ])
+            const array = Array.isArray(reservas?.value) ? reservas.value : [];
+            await Promise.all(array.map((reserva: any) =>
+                this.graphRestService.update(graphToken, reserva.id, { Status: "Cancelada" }, this.reservasListName)
+            ))
+            reservasCanceladas = array.length
+        }
+        await this.graphRestService.delete(graphToken, id, this.listName)
+        return { Title: title, reservasCanceladas }
     }
 
     async putSlot(graphToken:string, id:string, data:ParkingSlotDeactivateDTO){
