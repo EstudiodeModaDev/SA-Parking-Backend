@@ -7,6 +7,9 @@ import { ColaboradoresModule } from './routes/colaboradores/colaboradores.module
 import { ParkingSlotsModule } from './routes/parkingSlots/parkingSlots.module.js';
 import { RegistroVehicularModule } from './routes/registroVehicular/registroVehicular.module.js';
 import { ReservasModule } from './routes/reservas/reservas.module.js';
+import { logModule } from './common/log/log.module.js';
+import { logExceptionFilter } from './common/log/log.filter.js';
+import { APP_FILTER } from '@nestjs/core';
 //aqui se deben importar todos los modulos de cada reouter diferente
 
 @Module({
@@ -18,11 +21,13 @@ import { ReservasModule } from './routes/reservas/reservas.module.js';
     ColaboradoresModule,
     ParkingSlotsModule,
     RegistroVehicularModule,
-    ReservasModule
+    ReservasModule,
+    logModule,
     // hacer la llamada al modulo correspondiente
   ],
   controllers: [],
-  providers: [],
+  // filtro global que registra en la lista de logs todos los errores de los endpoints
+  providers: [{ provide: APP_FILTER, useClass: logExceptionFilter }],
 })
 export class AppModule {}
 
