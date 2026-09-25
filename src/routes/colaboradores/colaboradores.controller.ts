@@ -37,7 +37,7 @@ export class ColaboradoresController {
     return this.colaboradoresService.getColaboradoresFijos(graphToken);
   }
 
-  @Get('fijos')
+  @Get('fijosBy')
   @UseGuards(AuthGuard('azure-token'))
   async getColaboradoresBy(
     @Query('field') field: string,

@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { HttpException, HttpStatus, Injectable, NotFoundException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { AxiosRequestConfig } from 'axios';
 import { filter, firstValueFrom } from 'rxjs';
@@ -151,15 +151,11 @@ export class GraphRestService {
   ) {
     const siteId = await this.getSiteId(graphToken);
     const listId = await this.getListId(graphToken, listName);
-    let filterPath = `$filter=fields/${filters[0].field} eq '${filters[0].value}'`
-    if ( filters.length>1){
-      // si hay mas de un filtro en el array agrega cada filtro con and
-      for (const filter of filters ){
-        // se compara todo en minusculas y se escapan comillas simples para no romper el filtro OData
-        const safeValue = filter.value.replace(/'/g, "''");
-        filterPath += ` and fields/${filter.field} eq '${safeValue}'`
-      }
-    }
+    // cada filtro se une con and; se escapan comillas simples para no romper el filtro OData
+    const condiciones = filters.map(
+      (f) => `fields/${f.field} eq '${f.value.replace(/'/g, "''")}'`,
+    );
+    const filterPath = `$filter=${condiciones.join(' and ')}`;
     const path = `/sites/${siteId}/lists/${listId}/items?$expand=fields&${filterPath}`;
     // Title no esta indexado en la lista de SharePoint, Graph exige este header para permitir el filtro igual
     const response = await this.call('GET', path, graphToken, undefined, {
@@ -223,6 +219,9 @@ export class GraphRestService {
   async addMailList(graphToken:string, mail:string){
     let path = `/users?$filter=mail eq '${mail}'&$select=id`
     let response = await this.call('GET', path, graphToken)
+    if(response.data['@odata.count'] === 0)
+      throw new HttpException('No se encontro el correo dentro de la compañia', HttpStatus.NOT_FOUND)
+
     const userId = response.data.value[0].id
 
     path = `/groups/${this.groupID}/members/$ref`
@@ -231,11 +230,11 @@ export class GraphRestService {
   }
 
   async removeMailList(graphToken:string, mail:string){
-    let path = `/users?$filter=mail eq '${mail}'&$select=id`
-    let response = await this.call('GET', path, graphToken)
-    const userId = response.data.value[0].id
-
-    path = `/groups/${this.groupID}/members/${userId}/$ref`
+    let response = await this.getMailList(graphToken, mail)
+    if(response['@odata.count'] === 0)
+      throw new HttpException('No se encontro el correo dentro de el grupo', HttpStatus.NOT_FOUND)
+    const userId = response.value[0].id
+    const path = `/groups/${this.groupID}/members/${userId}/$ref`
     response = await this.call("DELETE",path,graphToken)
     return response.data
 

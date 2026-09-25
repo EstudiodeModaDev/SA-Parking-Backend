@@ -30,7 +30,7 @@ export class ReservasController {
   @UseGuards(AuthGuard('azure-token'))
   async getReservas(@Req() req: Request) {
     const graphToken = await this.OBOService.changeToken(req);
-    if (!this.accessService.hasAccess(req, graphToken, ['Usuario', 'Admin']))
+    if (!(await this.accessService.hasAccess(req, graphToken, ['Usuario', 'Admin'])))
       throw new HttpException(
         'El Usuario registrado no tiene acceso',
         HttpStatus.UNAUTHORIZED,
@@ -51,7 +51,7 @@ export class ReservasController {
   @UseGuards(AuthGuard('azure-token'))
   async getReservasHistory(@Req() req: Request) {
     const graphToken = await this.OBOService.changeToken(req);
-    if (!this.accessService.hasAccess(req, graphToken, ['Usuario', 'Admin']))
+    if (!(await this.accessService.hasAccess(req, graphToken, ['Usuario', 'Admin'])))
       throw new HttpException(
         'El Usuario registrado no tiene acceso',
         HttpStatus.UNAUTHORIZED,
@@ -72,7 +72,7 @@ export class ReservasController {
   @UseGuards(AuthGuard('azure-token'))
   async createQuickResv(@Req() req: Request) {
     const graphToken = await this.OBOService.changeToken(req);
-    if (!this.accessService.hasAccess(req, graphToken, ['Usuario', 'Admin']))
+    if (!(await this.accessService.hasAccess(req, graphToken, ['Usuario', 'Admin'])))
       throw new HttpException(
         'El Usuario registrado no tiene acceso',
         HttpStatus.UNAUTHORIZED,
@@ -90,7 +90,7 @@ export class ReservasController {
   @UseGuards(AuthGuard('azure-token'))
   async createQuickResvAdm(@Req() req: Request) {
     const graphToken = await this.OBOService.changeToken(req);
-    if (!this.accessService.hasAccess(req, graphToken, ['Admin']))
+    if (!(await this.accessService.hasAccess(req, graphToken, ['Admin'])))
       throw new HttpException(
         'El Usuario registrado no tiene acceso',
         HttpStatus.UNAUTHORIZED,
@@ -102,7 +102,7 @@ export class ReservasController {
   @UseGuards(AuthGuard('azure-token'))
   async createPuntResvAdm(@Req() req: Request) {
     const graphToken = await this.OBOService.changeToken(req);
-    if (!this.accessService.hasAccess(req, graphToken, ['Admin']))
+    if (!(await this.accessService.hasAccess(req, graphToken, ['Admin'])))
       throw new HttpException(
         'El Usuario registrado no tiene acceso',
         HttpStatus.UNAUTHORIZED,
@@ -114,7 +114,7 @@ export class ReservasController {
   @UseGuards(AuthGuard('azure-token'))
   async createPuntResvUsr(@Req() req: Request) {
     const graphToken = await this.OBOService.changeToken(req);
-    if (!this.accessService.hasAccess(req, graphToken, ['Admin']))
+    if (!(await this.accessService.hasAccess(req, graphToken, ['Usuario', 'Admin'])))
       throw new HttpException(
         'El Usuario registrado no tiene acceso',
         HttpStatus.UNAUTHORIZED,
@@ -132,18 +132,12 @@ export class ReservasController {
   @UseGuards(AuthGuard('azure-token'))
   async CancelReserv(@Req() req: Request, @Param('id') id :string) {
     const graphToken = await this.OBOService.changeToken(req);
-    if (!this.accessService.hasAccess(req, graphToken, ['Admin']))
+    if (!(await this.accessService.hasAccess(req, graphToken, ['Usuario', 'Admin'])))
       throw new HttpException(
         'El Usuario registrado no tiene acceso',
         HttpStatus.UNAUTHORIZED,
       );
-    const rol = await this.usuariosParkingService.getRole(graphToken, req);
     const userData = req.user as { upn: string; name: string };
-    switch (rol) {
-      case 'Admin':
-        return await this.ReservasService.cancelAdmin(graphToken, id);
-      case 'Usuario':
-        return await this.ReservasService.cancelUsr(graphToken, id, userData.upn)
-    }
+    return await this.ReservasService.cancelUsr(graphToken, id, userData.upn)
   }
 }

@@ -182,6 +182,3 @@ dist
 vite.config.js.timestamp-*
 vite.config.ts.timestamp-*
 .vite/
-
-#auth guard para debug
-src/common/auth/debug-auth.guard.ts
