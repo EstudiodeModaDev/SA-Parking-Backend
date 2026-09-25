@@ -7,6 +7,7 @@ export class logDTO{
     Codigo : string
     Mensaje : string
     Fecha : string
+    
 }
 
 @Injectable()

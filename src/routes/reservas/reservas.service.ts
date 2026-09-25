@@ -26,6 +26,7 @@ export class reservasService {
     );
     const array = Array.isArray(response?.value) ? response.value : [];
     return array.map((x: any) => this.toModel(x));
+    
   }
 
   async getUserActive(graphToken: string, correo: string) {

@@ -14,6 +14,7 @@ export class GraphRestService {
   private readonly groupID : string
   // se cachean en memoria porque no cambian mientras el proceso sigue vivo,
   // asi se evita resolverlos en cada request
+  
   private siteId: string | null = null;
   private readonly listIdCache = new Map<string, string>();
 
