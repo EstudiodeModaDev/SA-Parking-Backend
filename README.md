@@ -1,87 +1,114 @@
-# SA-Parking Backend
+<p align="center">
+  <a href="http://nestjs.com/" target="blank"><img src="https://nestjs.com/img/logo-small.svg" width="120" alt="Nest Logo" /></a>
+</p>
 
-API REST del sistema de parqueadero de **Estudio de Moda**. Está construida con [NestJS](https://nestjs.com/) y no tiene base de datos propia: toda la información vive en **listas de SharePoint** y en **Microsoft Entra ID (Azure AD)**, y se consulta a través de **Microsoft Graph**.
+[circleci-image]: https://img.shields.io/circleci/build/github/nestjs/nest/master?token=abc123def456
+[circleci-url]: https://circleci.com/gh/nestjs/nest
 
-## Documentación
+  <p align="center">A progressive <a href="http://nodejs.org" target="_blank">Node.js</a> framework for building efficient and scalable server-side applications.</p>
+    <p align="center">
+<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/v/@nestjs/core.svg" alt="NPM Version" /></a>
+<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/l/@nestjs/core.svg" alt="Package License" /></a>
+<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/dm/@nestjs/common.svg" alt="NPM Downloads" /></a>
+<a href="https://circleci.com/gh/nestjs/nest" target="_blank"><img src="https://img.shields.io/circleci/build/github/nestjs/nest/master" alt="CircleCI" /></a>
+<a href="https://discord.gg/G7Qnnhy" target="_blank"><img src="https://img.shields.io/badge/discord-online-brightgreen.svg" alt="Discord"/></a>
+<a href="https://opencollective.com/nest#backer" target="_blank"><img src="https://opencollective.com/nest/backers/badge.svg" alt="Backers on Open Collective" /></a>
+<a href="https://opencollective.com/nest#sponsor" target="_blank"><img src="https://opencollective.com/nest/sponsors/badge.svg" alt="Sponsors on Open Collective" /></a>
+  <a href="https://paypal.me/kamilmysliwiec" target="_blank"><img src="https://img.shields.io/badge/Donate-PayPal-ff3f59.svg" alt="Donate us"/></a>
+    <a href="https://opencollective.com/nest#sponsor"  target="_blank"><img src="https://img.shields.io/badge/Support%20us-Open%20Collective-41B883.svg" alt="Support us"></a>
+  <a href="https://twitter.com/nestframework" target="_blank"><img src="https://img.shields.io/twitter/follow/nestframework.svg?style=social&label=Follow" alt="Follow us on Twitter"></a>
+</p>
+  <!--[![Backers on Open Collective](https://opencollective.com/nest/backers/badge.svg)](https://opencollective.com/nest#backer)
+  [![Sponsors on Open Collective](https://opencollective.com/nest/sponsors/badge.svg)](https://opencollective.com/nest#sponsor)-->
 
-| Documento | Contenido |
-| --- | --- |
-| [Rutas y endpoints](docs/rutas.md) | Listado completo de endpoints: método, ruta, roles permitidos y enlace a su documentación. |
-| [Flujo de datos](docs/flujo-de-datos.md) | Recorrido genérico de una petición desde que llega hasta que responde. |
-| [Router `settings`](docs/rutas/settings.md) | Configuración general del parqueadero. |
-| [Router `usuarios`](docs/rutas/usuarios.md) | Usuarios registrados en la app, roles e información del usuario autenticado. |
-| [Router `colaboradores`](docs/rutas/colaboradores.md) | Colaboradores fijos y gestión del grupo de Microsoft. |
-| [Router `parkingSlots`](docs/rutas/parking-slots.md) | Celdas de parqueo y su ocupación por turno. |
-| [Router `registro-vehicular`](docs/rutas/registro-vehicular.md) | Registro de vehículos. |
-| [Router `reserva`](docs/rutas/reservas.md) | Creación, consulta y cancelación de reservas. |
+## Description
 
-## Arquitectura en resumen
+[Nest](https://github.com/nestjs/nest) framework TypeScript starter repository.
 
-```
-Frontend (SA-Parking) ──Bearer token de Azure AD──▶ Backend NestJS ──token OBO──▶ Microsoft Graph ──▶ SharePoint / Entra ID
-```
-
-1. El frontend envía el token de Azure AD del usuario en el header `Authorization`.
-2. El guard `azure-token` valida la firma, la audiencia, el emisor y la expiración del token.
-3. El backend cambia ese token por uno de Microsoft Graph usando el flujo **On-Behalf-Of** (OBO).
-4. Se verifica el rol del usuario (`Admin` o `Usuario`) contra la lista de usuarios de SharePoint o el grupo de Microsoft.
-5. El service del router ejecuta la lógica y lee o escribe en SharePoint mediante `GraphRestService`.
-
-El detalle está en [docs/flujo-de-datos.md](docs/flujo-de-datos.md).
-
-## Estructura del proyecto
-
-```
-src/
-├── main.ts                     # Arranque de la app (puerto PORT o 3000)
-├── app.module.ts               # Módulo raíz: registra todos los routers
-├── common/                     # Servicios compartidos por todos los routers
-│   ├── auth/                   # Estrategias de Passport (validación del token de Azure AD)
-│   ├── OnBehalfOf/             # Cambio de token del usuario → token de Graph
-│   ├── access/                 # Control de acceso por rol
-│   └── graph/                  # Cliente de Microsoft Graph (listas de SharePoint, grupos, usuarios)
-└── routes/                     # Un directorio por router
-    └── <router>/
-        ├── <router>.controller.ts   # Define endpoints, guard y roles permitidos
-        ├── <router>.service.ts      # Lógica de negocio y mapeo de datos
-        ├── <router>.module.ts       # Declara dependencias del router
-        └── dto/                     # Tipos de los datos de entrada y salida
-```
-
-## Variables de entorno
-
-Se cargan con `@nestjs/config` desde un archivo `.env` en la raíz.
-
-| Variable | Uso |
-| --- | --- |
-| `AZURE_TENANT_ID` | Tenant de Azure AD. Se usa para validar tokens y para el flujo OBO. |
-| `AZURE_CLIENT_ID` | ID de la app registrada en Azure (audiencia esperada del token). |
-| `AZURE_SECRET` | Secreto de la app, usado en el flujo OBO. |
-| `SHARE_POINT_SITE_URL` | URL del sitio de SharePoint donde viven las listas. |
-| `OUTLOOK_GROUP_ID` | ID del grupo de Microsoft cuyos miembros tienen rol `Usuario`. |
-| `SETTINGS_LIST_NAME` | Nombre de la lista de configuración. |
-| `USUARIOS_PARKING_LIST_NAME` | Nombre de la lista de usuarios y roles. |
-| `COLABORADORES_FIJOS_LIST_NAME` | Nombre de la lista de colaboradores fijos. |
-| `PARKING_SLOTS_LIST_NAME` | Nombre de la lista de celdas de parqueo. |
-| `RESERVAS_LIST_NAME` | Nombre de la lista de reservas. |
-| `REGISTRO_VEHICULAR_LIST_NAME` | Nombre de la lista de registro vehicular. |
-
-## Scripts
+## Project setup
 
 ```bash
-npm install          # instalar dependencias
-npm run start:dev    # desarrollo con recarga automática
-npm run build        # compilar a dist/
-npm run start:prod   # ejecutar la versión compilada
-npm run lint         # oxlint
-npm run test         # pruebas unitarias (vitest)
-npm run test:e2e     # pruebas end-to-end
+$ npm install
 ```
 
-## Agregar un router nuevo
+## Compile and run the project
 
-1. Crear `src/routes/<nombre>/` con controller, service, module y `dto/`.
-2. En el module, importar `OnBehalfOfModule`, `GraphRestModule` y `AccessModule`.
-3. En cada endpoint, seguir el patrón descrito en [docs/flujo-de-datos.md](docs/flujo-de-datos.md#patrón-de-un-endpoint).
-4. Registrar el module en [src/app.module.ts](src/app.module.ts).
-5. Documentar los endpoints en [docs/rutas.md](docs/rutas.md) y crear su archivo en `docs/rutas/`.
+```bash
+# development
+$ npm run start
+
+# watch mode
+$ npm run start:dev
+
+# production mode
+$ npm run start:prod
+```
+
+## Run tests
+
+```bash
+# unit tests
+$ npm run test
+
+# e2e tests
+$ npm run test:e2e
+
+# test coverage
+$ npm run test:cov
+```
+
+## Deployment
+
+When you're ready to deploy your NestJS application to production, there are some key steps you can take to ensure it runs as efficiently as possible. Check out the [deployment documentation](https://docs.nestjs.com/deployment) for more information.
+
+If you are looking for a cloud-based platform to deploy your NestJS application, check out [Mau](https://mau.nestjs.com), our official platform for deploying NestJS applications on AWS. Mau makes deployment straightforward and fast, requiring just a few simple steps:
+
+```bash
+$ npm install -g @nestjs/mau
+$ mau deploy
+```
+
+With Mau, you can deploy your application in just a few clicks, allowing you to focus on building features rather than managing infrastructure.
+
+## Observability
+
+In production applications, observability is essential for understanding how your system behaves, detecting issues early, and maintaining reliable performance.
+
+[NestJS Observe](https://observe.nestjs.com) automatically instruments your NestJS application, giving you deep visibility into your system with minimal setup:
+
+- **Distributed tracing:** Follow requests across services and understand how they flow through your system.
+- **Waterfall analysis:** Visualize request execution and identify slow operations, bottlenecks, and unexpected delays.
+- **Performance analysis:** Analyze application performance in real time and quickly pinpoint areas that need optimization.
+- **Metrics:** Track key application and infrastructure metrics to understand system health and performance trends.
+- **Logging:** Centralize and correlate logs with traces and other telemetry to make debugging easier.
+- **Error tracking:** Detect errors quickly and investigate their root causes with the surrounding context.
+- **SLA monitoring:** Track service-level objectives and identify when your application is approaching or exceeding defined thresholds.
+- **Alarms and alerts:** Set up alerts for critical errors, performance degradation, SLA violations, and other anomalies so your team can react quickly.
+
+## Resources
+
+Check out a few resources that may come in handy when working with NestJS:
+
+- Visit the [NestJS Documentation](https://docs.nestjs.com) to learn more about the framework.
+- For questions and support, please visit our [Discord channel](https://discord.gg/G7Qnnhy).
+- To dive deeper and get more hands-on experience, check out our official video [courses](https://courses.nestjs.com/).
+- Deploy your application to AWS with the help of [NestJS Mau](https://mau.nestjs.com) in just a few clicks.
+- Auto-instrument your application with [NestJS Observer](https://observer.nestjs.com). Distributed tracing, metrics, and logging made easy. Error tracking and performance monitoring for your NestJS applications.
+- Visualize your application graph and interact with the NestJS application in real-time using [NestJS Devtools](https://devtools.nestjs.com).
+- Need help with your project (part-time to full-time)? Check out our official [enterprise support](https://enterprise.nestjs.com).
+- To stay in the loop and get updates, follow us on [X](https://x.com/nestframework) and [LinkedIn](https://linkedin.com/company/nestjs).
+- Looking for a job, or have a job to offer? Check out our official [Jobs board](https://jobs.nestjs.com).
+
+## Support
+
+Nest is an MIT-licensed open source project. It can grow thanks to the sponsors and support by the amazing backers. If you'd like to join them, please [read more here](https://docs.nestjs.com/support).
+
+## Stay in touch
+
+- Author - [Kamil Myśliwiec](https://twitter.com/kammysliwiec)
+- Website - [https://nestjs.com](https://nestjs.com/)
+- Twitter - [@nestframework](https://twitter.com/nestframework)
+
+## License
+
+Nest is [MIT licensed](https://github.com/nestjs/nest/blob/master/LICENSE).
