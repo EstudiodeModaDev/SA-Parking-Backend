@@ -33,4 +33,5 @@ export class logExceptionFilter implements ExceptionFilter{
 
         res.status(status).json(typeof body === 'string' ? { statusCode: status, message: body } : body)
     }
+    
 }
