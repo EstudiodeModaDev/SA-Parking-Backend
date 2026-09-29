@@ -4,7 +4,7 @@ import { ConfigService } from '@nestjs/config';
 import { ReservasDTO } from './dto/reservas.dto.js';
 import { ParkingSlotsService } from '../parkingSlots/parkingSlots.service.js';
 import { ParkingSlotDTO } from '../parkingSlots/dto/ParkingSlots.dto.js';
-import { esTurnoValido, TURNOS, turnoDisponible } from '../parkingSlots/turnos.js';
+import { esTurnoValido, OcupacionTurnos, ocuparTurno, TURNOS, turnoDisponible } from '../parkingSlots/turnos.js';
 import { fechaHoy, normalizarFecha } from '../parkingSlots/fechas.js';
 
 @Injectable()
@@ -60,6 +60,7 @@ export class reservasService {
 
   async createQuickUsuario(graphToken: string, sended: any, email:string, name:string) {
     const fecha = this.validarDatosReserva(sended)
+    await this.validarTurnoUsuario(graphToken, email, sended.Turn, fecha)
     const SpotId = await this.reservRandomSlot(graphToken, sended.VehicleType, sended.Turn, fecha)
     const data = {
         Title : email,
@@ -82,6 +83,7 @@ export class reservasService {
 
   async createQuickAdmin(graphToken:string, sended:any){
     const fecha = this.validarDatosReserva(sended)
+    await this.validarTurnoUsuario(graphToken, sended.Title, sended.Turn, fecha)
     const SpotId = await this.reservRandomSlot(graphToken, sended.VehicleType, sended.Turn, fecha)
     const data = {
         Title : sended.Title,
@@ -104,6 +106,7 @@ export class reservasService {
 
   async createPuntualUsr(graphToken:string, sended:any, email:string, name:string){
     const fecha = this.validarDatosReserva(sended)
+    await this.validarTurnoUsuario(graphToken, email, sended.Turn, fecha)
     await this.validarCeldaPuntual(graphToken, sended.SpotId, sended.VehicleType, sended.Turn, fecha)
     let data = {
       Title : email,
@@ -125,6 +128,7 @@ export class reservasService {
   }
   async createPuntualAdm(graphToken:string, sended:any){
     const fecha = this.validarDatosReserva(sended)
+    await this.validarTurnoUsuario(graphToken, sended.Title, sended.Turn, fecha)
     await this.validarCeldaPuntual(graphToken, sended.SpotId, sended.VehicleType, sended.Turn, fecha)
     let data = {
       Title : sended.Title,
@@ -169,6 +173,22 @@ export class reservasService {
         throw new BadRequestException('No se puede reservar en una fecha pasada')
     }
     return fecha
+  }
+
+  // un usuario solo puede tener una reserva activa por turno en el mismo dia, sin importar el vehiculo.
+  // aplica igual si la crea el usuario o un admin a su nombre
+  private async validarTurnoUsuario(graphToken:string, email:string, turn: ReservasDTO['Turn'], fecha: string){
+    if(!email){
+        throw new BadRequestException('Debe indicar el usuario (Title) de la reserva')
+    }
+    const activas = await this.getUserActive(graphToken, email) as ReservasDTO[]
+    const ocupacion: OcupacionTurnos = { Manana: false, Tarde: false }
+    for(const reserva of activas){
+        if(normalizarFecha(reserva.Date) === fecha) ocuparTurno(ocupacion, reserva.Turn)
+    }
+    if(!turnoDisponible(ocupacion, turn)){
+        throw new ConflictException(`El usuario ${email} ya tiene una reserva activa que cubre el turno ${turn} el ${fecha}`)
+    }
   }
 
   private async validarCeldaPuntual(graphToken:string, spotId:string, vehicleType: ReservasDTO['VehicleType'], turn: ReservasDTO['Turn'], fecha: string){
