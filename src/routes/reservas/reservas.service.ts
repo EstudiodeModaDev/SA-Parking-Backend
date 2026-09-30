@@ -22,7 +22,7 @@ export class reservasService {
     const response = await this.graphRestService.getFiltred(
       graphToken,
       this.listName,
-      [{ field: 'UserEmail', value: correo }],
+      [{ field: 'Title', value: correo }],
     );
     const array = Array.isArray(response?.value) ? response.value : [];
     return array.map((x: any) => this.toModel(x));
