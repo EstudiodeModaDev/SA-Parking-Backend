@@ -1,4 +1,4 @@
-import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
+import { HttpException, HttpStatus, Injectable, NotFoundException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { AxiosRequestConfig } from 'axios';
 import { filter, firstValueFrom } from 'rxjs';
@@ -14,6 +14,7 @@ export class GraphRestService {
   private readonly groupID : string
   // se cachean en memoria porque no cambian mientras el proceso sigue vivo,
   // asi se evita resolverlos en cada request
+  
   private siteId: string | null = null;
   private readonly listIdCache = new Map<string, string>();
 
@@ -63,6 +64,29 @@ export class GraphRestService {
   }
 
   /**
+   * Graph pagina todas las colecciones (100 usuarios, 200 items de lista, etc.) y no permite
+   * desactivarlo: se sigue @odata.nextLink hasta traer todos los registros y se devuelven juntos.
+   * Se conserva @odata.count de la primera pagina para quien lo necesite.
+   */
+  private async getAllPages(
+    path: string,
+    graphToken: string,
+    extraHeaders?: Record<string, string>,
+  ): Promise<{ value: any[]; [key: string]: any }> {
+    const value: any[] = [];
+    let count: number | undefined;
+    let nextPath = path;
+    while (nextPath) {
+      const response = await this.call('GET', nextPath, graphToken, undefined, extraHeaders);
+      if (count === undefined) count = response.data?.['@odata.count'];
+      value.push(...(response.data?.value ?? []));
+      const nextLink: string | undefined = response.data?.['@odata.nextLink'];
+      nextPath = nextLink ? nextLink.replace(this.graphBaseUrl, '') : '';
+    }
+    return count === undefined ? { value } : { value, '@odata.count': count };
+  }
+
+  /**
    * Resuelve el id del sitio de SharePoint (formato `{hostname},{siteId},{webId}`)
    * a partir de SHARE_POINT_SITE_URL. Se necesita porque los endpoints de Graph
    * para listas cuelgan de /sites/{siteId}, no de la url del sitio.
@@ -72,7 +96,7 @@ export class GraphRestService {
 
     const siteUrl = this.configService.get<string>('SHARE_POINT_SITE_URL');
     if (!siteUrl) {
-      throw new HttpException('Falta configurar SHARE_POINT_SITE_URL', HttpStatus.INTERNAL_SERVER_ERROR);
+      throw new Error('Falta configurar SHARE_POINT_SITE_URL');
     }
 
     const { hostname, pathname } = new URL(siteUrl);
@@ -114,9 +138,8 @@ export class GraphRestService {
       (l) => l.displayName === listName || l.name === listName,
     );
     if (!list) {
-      throw new HttpException(
+      throw new NotFoundException(
         `No se encontro la lista "${listName}" en el sitio de SharePoint`,
-        HttpStatus.NOT_FOUND,
       );
     }
     this.listIdCache.set(listName, list.id);
@@ -135,14 +158,21 @@ export class GraphRestService {
     return response.data;
   }
 
+  // ordena los items del mas reciente al mas antiguo segun la fecha de creacion
+  private readonly orderByRecent = '$orderby=fields/Created desc';
+
   async get(graphToken: string, listName: string, itemId?: string) {
     const siteId = await this.getSiteId(graphToken);
     const listId = await this.getListId(graphToken, listName);
-    const path = itemId
-      ? `/sites/${siteId}/lists/${listId}/items/${itemId}?$expand=fields`
-      : `/sites/${siteId}/lists/${listId}/items?$expand=fields`;
-    const response = await this.call('GET', path, graphToken);
-    return response.data;
+    // Created no esta indexado, Graph exige este header para permitir el orderby
+    const headers = { Prefer: 'HonorNonIndexedQueriesWarningMayFailRandomly' };
+    if (itemId) {
+      const path = `/sites/${siteId}/lists/${listId}/items/${itemId}?$expand=fields`;
+      const response = await this.call('GET', path, graphToken, undefined, headers);
+      return response.data;
+    }
+    const path = `/sites/${siteId}/lists/${listId}/items?$expand=fields&$top=999&${this.orderByRecent}`;
+    return this.getAllPages(path, graphToken, headers);
   }
 
   async getFiltred(
@@ -157,12 +187,11 @@ export class GraphRestService {
       (f) => `fields/${f.field} eq '${f.value.replace(/'/g, "''")}'`,
     );
     const filterPath = `$filter=${condiciones.join(' and ')}`;
-    const path = `/sites/${siteId}/lists/${listId}/items?$expand=fields&${filterPath}`;
+    const path = `/sites/${siteId}/lists/${listId}/items?$expand=fields&$top=999&${filterPath}&${this.orderByRecent}`;
     // Title no esta indexado en la lista de SharePoint, Graph exige este header para permitir el filtro igual
-    const response = await this.call('GET', path, graphToken, undefined, {
+    return this.getAllPages(path, graphToken, {
       Prefer: 'HonorNonIndexedQueriesWarningMayFailRandomly',
     });
-    return response.data;
   }
 
   async create<T>(graphToken: string, fields: T, listName: string) {
@@ -207,14 +236,13 @@ export class GraphRestService {
   }
 
   async getMailList(graphToken: string, filteredEmail?: string) {
-    let path = `/groups/${this.groupID}/transitiveMembers`
+    let path = `/groups/${this.groupID}/transitiveMembers?$top=999`
     if (filteredEmail !== undefined) {
       path = `/groups/${this.groupID}/transitiveMembers/microsoft.graph.user?$filter=mail eq '${filteredEmail}'&$count=true`;
     }
-    const response = await this.call('GET', path, graphToken,undefined, {
+    return this.getAllPages(path, graphToken, {
       "ConsistencyLevel" : "eventual"
     })
-    return response.data
   }
 
   async addMailList(graphToken:string, mail:string){
@@ -231,20 +259,19 @@ export class GraphRestService {
   }
 
   async removeMailList(graphToken:string, mail:string){
-    let response = await this.getMailList(graphToken, mail)
-    if(response['@odata.count'] === 0)
+    const members = await this.getMailList(graphToken, mail)
+    if(members['@odata.count'] === 0)
       throw new HttpException('No se encontro el correo dentro de el grupo', HttpStatus.NOT_FOUND)
-    const userId = response.value[0].id
+    const userId = members.value[0].id
     const path = `/groups/${this.groupID}/members/${userId}/$ref`
-    response = await this.call("DELETE",path,graphToken)
+    const response = await this.call("DELETE",path,graphToken)
     return response.data
 
   }
 
   async getAllWorkers(graphToken:string){
-    const path = `/users`
-    const response = await this.call("GET", path, graphToken)
-    return response.data
+    const path = `/users?$top=999`
+    return this.getAllPages(path, graphToken)
   }
 
 }

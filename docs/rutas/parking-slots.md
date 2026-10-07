@@ -2,7 +2,7 @@
 
 [← Rutas y endpoints](../rutas.md) · [Flujo de datos](../flujo-de-datos.md)
 
-Celdas de parqueo. Además del CRUD, calcula la **ocupación por turno** de cada celda a partir de las reservas activas. Su service lo reutiliza el router de [reservas](reservas.md) para asignar y validar celdas.
+Celdas de parqueo. Además del CRUD, calcula la **ocupación por turno** de cada celda a partir de las reservas activas y de las celdas asignadas a colaboradores fijos. Su service lo reutiliza el router de [reservas](reservas.md) para asignar y validar celdas.
 
 ## Archivos
 
@@ -15,7 +15,7 @@ Celdas de parqueo. Además del CRUD, calcula la **ocupación por turno** de cada
 | [parkingSlots.module.ts](../../src/routes/parkingSlots/parkingSlots.module.ts) | Dependencias; exporta `ParkingSlotsService`. |
 | [dto/ParkingSlots.dto.ts](../../src/routes/parkingSlots/dto/ParkingSlots.dto.ts) | `ParkingSlotDTO` y `ParkingSlotDeactivateDTO` (todos los campos opcionales, para ediciones). |
 
-**Listas de SharePoint:** `PARKING_SLOTS_LIST_NAME` (celdas) y `RESERVAS_LIST_NAME` (para la ocupación).
+**Listas de SharePoint:** `PARKING_SLOTS_LIST_NAME` (celdas) `RESERVAS_LIST_NAME` y `COLABORADORES_FIJOS_LIST_NAME` (para la ocupación).
 
 ## Endpoints
 
@@ -23,11 +23,12 @@ Celdas de parqueo. Además del CRUD, calcula la **ocupación por turno** de cada
 
 - **Roles:** Admin, Usuario
 - **Controller:** `getSlots` — [parkingSlots.controller.ts:27](../../src/routes/parkingSlots/parkingSlots.controller.ts#L27)
-- **Service:** `getParkingSlots` — [parkingSlots.service.ts:16](../../src/routes/parkingSlots/parkingSlots.service.ts#L16)
+- **Service:** `getParkingSlots` — [parkingSlots.service.ts:20](../../src/routes/parkingSlots/parkingSlots.service.ts#L20)
 - **Lógica:**
-  1. En paralelo: trae las celdas con `Activa = "Activa"` y calcula la ocupación con `getOcupacion` ([parkingSlots.service.ts:42](../../src/routes/parkingSlots/parkingSlots.service.ts#L42)).
+  1. En paralelo: trae las celdas con `Activa = "Activa"` y calcula la ocupación con `getOcupacion` ([parkingSlots.service.ts:48](../../src/routes/parkingSlots/parkingSlots.service.ts#L48)).
   0. Query opcional `?date=YYYY-MM-DD` (por defecto, hoy en hora de Colombia). Fecha inválida → **400**.
   2. `getOcupacion` lee las reservas con `Status = "Activa"`, descarta las que no son de la fecha consultada (la `Date` se normaliza con `normalizarFecha` de [fechas.ts](../../src/routes/parkingSlots/fechas.ts), porque SharePoint la devuelve en UTC) y, por cada una, marca el turno ocupado de su `SpotId` con `ocuparTurno` ([turnos.ts:15](../../src/routes/parkingSlots/turnos.ts#L15)). `Día completo` ocupa mañana y tarde.
+     En paralelo lee la lista de colaboradores fijos (directo con `GraphRestService`, sin pasar por `ColaboradoresService`, para no acoplar los módulos) y marca mañana y tarde como ocupadas en cualquier fecha para cada celda cuyo `Title` coincida con el `SpotAsignado` de un fijo. Con `getSlotByTitle` solo se consulta el fijo con `SpotAsignado` igual a esa celda.
   3. A cada celda se le agrega `Ocupacion: { Manana, Tarde }`.
 - **Respuesta:** `ParkingSlotDTO[]` con `Ocupacion`.
 
@@ -35,14 +36,14 @@ Celdas de parqueo. Además del CRUD, calcula la **ocupación por turno** de cada
 
 - **Roles:** Admin
 - **Controller:** `CreateSlot` — [parkingSlots.controller.ts:40](../../src/routes/parkingSlots/parkingSlots.controller.ts#L40)
-- **Service:** `createSlot` — [parkingSlots.service.ts:58](../../src/routes/parkingSlots/parkingSlots.service.ts#L58)
+- **Service:** `createSlot` — [parkingSlots.service.ts:78](../../src/routes/parkingSlots/parkingSlots.service.ts#L78)
 - **Body:** `{ Title, TipoCelda, Itinerancia, Activa }`
 
 ### `PUT /parkingSlots/inactiveSlot/:id`
 
 - **Roles:** Admin
 - **Controller:** `InactiveSlot` — [parkingSlots.controller.ts:53](../../src/routes/parkingSlots/parkingSlots.controller.ts#L53)
-- **Service:** `putSlot` — [parkingSlots.service.ts:68](../../src/routes/parkingSlots/parkingSlots.service.ts#L68) con `{ Activa: "Inactiva" }`.
+- **Service:** `putSlot` — [parkingSlots.service.ts:109](../../src/routes/parkingSlots/parkingSlots.service.ts#L109) con `{ Activa: "Inactiva" }`.
 
 ### `PUT /parkingSlots/activeSlot/:id`
 
@@ -61,7 +62,7 @@ Celdas de parqueo. Además del CRUD, calcula la **ocupación por turno** de cada
 | Método | Usado por | Descripción |
 | --- | --- | --- |
 | `getParkingSlots` | `reservasService.reservRandomSlot` | Celdas activas con ocupación, para elegir una libre al azar. |
-| `getSlotByTitle` — [parkingSlots.service.ts:29](../../src/routes/parkingSlots/parkingSlots.service.ts#L29) | `reservasService.validarCeldaPuntual` | Una celda por `Title` con su ocupación. |
+| `getSlotByTitle` — [parkingSlots.service.ts:34](../../src/routes/parkingSlots/parkingSlots.service.ts#L34) | `reservasService.validarCeldaPuntual` | Una celda por `Title` con su ocupación. |
 
 Las funciones de [turnos.ts](../../src/routes/parkingSlots/turnos.ts) (`esTurnoValido`, `turnoDisponible`) también se usan en reservas.
 

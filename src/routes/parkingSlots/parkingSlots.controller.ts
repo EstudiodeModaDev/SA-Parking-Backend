@@ -99,7 +99,14 @@ export class ParkingSlotsController {
         'El usuario no tiene acceso',
         HttpStatus.UNAUTHORIZED,
       );
-    return this.parkingSlotService.putSlot(graphToken, id, req.body);
+    // solo se reenvian columnas de la lista; campos extra (ID, Ocupacion) hacen que Graph responda 400
+    const { Title, TipoCelda, Itinerancia, Activa } = req.body ?? {};
+    return this.parkingSlotService.putSlot(graphToken, id, {
+      Title,
+      TipoCelda,
+      Itinerancia,
+      Activa,
+    });
   }
 
   @Delete('delSlot/:id')

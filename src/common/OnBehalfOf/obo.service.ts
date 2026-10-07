@@ -21,6 +21,7 @@ export class OnBehalfOfService {
     const CLIENT_ID = this.configService.get('AZURE_CLIENT_ID');
     const SECRET = this.configService.get('AZURE_SECRET');
     const url = `https://login.microsoftonline.com/${TENANT_ID}/oauth2/v2.0/token`;
+    
     const data: getGraphTokenBody = {
       grant_type: 'urn:ietf:params:oauth:grant-type:jwt-bearer',
       client_id: CLIENT_ID,

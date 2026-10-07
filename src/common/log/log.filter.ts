@@ -30,7 +30,6 @@ export class logExceptionFilter implements ExceptionFilter{
         const graphToken = (req as any).graphToken as string | undefined
         if(graphToken)
             await this.logService.sendLog(graphToken, { TipoLog: tipoLog, Codigo: String(status), Mensaje: mensaje, Fecha: new Date().toISOString() })
-
         res.status(status).json(typeof body === 'string' ? { statusCode: status, message: body } : body)
     }
 }
