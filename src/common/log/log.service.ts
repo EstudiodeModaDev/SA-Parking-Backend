@@ -3,7 +3,7 @@ import { GraphRestService } from "../graph/graphRest.service.js";
 import { ConfigService } from "@nestjs/config";
 
 export class logDTO{
-    TipoLog : "WARN" | "LOG" | "ERROR"
+    TipoLog : "WARN" | "LOG" | "ERROR" | "SUCESS"
     Codigo : string
     Mensaje : string
     Fecha : string

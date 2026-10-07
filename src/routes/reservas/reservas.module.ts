@@ -6,10 +6,11 @@ import { GraphRestModule } from '../../common/graph/graphRest.module.js';
 import { AccessModule } from '../../common/access/access.module.js';
 import { UsuariosParkingModule } from '../usuariosParking/usuariosParking.module.js';
 import { ParkingSlotsModule } from '../parkingSlots/parkingSlots.module.js';
+import { logModule } from '../../common/log/log.module.js';
 
 
 @Module({
-    imports: [AccessModule, OnBehalfOfModule, GraphRestModule, UsuariosParkingModule, ParkingSlotsModule],
+    imports: [AccessModule, OnBehalfOfModule, GraphRestModule, UsuariosParkingModule, ParkingSlotsModule, logModule],
     controllers: [ReservasController],
     providers: [reservasService],
 })
