@@ -1,0 +1,12 @@
+services:
+  api: 
+    build:
+      context: .
+      dockerfile: Containerfile
+
+    container_name: SA-Parking-Backend
+    ports:
+      - "3000:3000"
+    env_file:
+      - .env
+    
