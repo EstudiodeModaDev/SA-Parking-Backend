@@ -1,4 +1,4 @@
-import { HttpException, HttpStatus, Injectable } from "@nestjs/common";
+import { Injectable, NotFoundException } from "@nestjs/common";
 import { GraphRestService } from "../../common/graph/graphRest.service.js";
 import { ConfigService } from "@nestjs/config";
 import { ParkingSlotDTO } from "./dto/ParkingSlots.dto.js";
@@ -9,9 +9,11 @@ import { normalizarFecha } from "./fechas.js";
 export class ParkingSlotsService{
     private listName:string
     private reservasListName:string
+    private colaboradoresFijosListName:string
     constructor (private readonly graphRestService : GraphRestService, private readonly configService : ConfigService){
         this.listName = String(configService.get('PARKING_SLOTS_LIST_NAME'))
         this.reservasListName = String(configService.get('RESERVAS_LIST_NAME'))
+        this.colaboradoresFijosListName = String(configService.get('COLABORADORES_FIJOS_LIST_NAME'))
     }
 
     // date en formato YYYY-MM-DD; la ocupacion solo considera las reservas de ese dia
@@ -26,6 +28,7 @@ export class ParkingSlotsService{
             slot.Ocupacion = ocupacion.get(slot.Title) ?? { Manana: false, Tarde: false }
             return slot
         });
+        
     }
 
     async getSlotByTitle(graphToken: string, title: string, date: string): Promise<ParkingSlotDTO | null>{
@@ -41,12 +44,25 @@ export class ParkingSlotsService{
     }
 
     // ocupacion por turno de cada celda segun las reservas activas del dia indicado (SpotId = Title de la celda)
+    // y las celdas asignadas a colaboradores fijos, que quedan ocupadas todo el dia en cualquier fecha
     private async getOcupacion(graphToken: string, date: string, spotId?: string): Promise<Map<string, OcupacionTurnos>>{
         const filters = [{ field: "Status", value: "Activa" }]
         if(spotId) filters.push({ field: "SpotId", value: spotId })
-        const response = await this.graphRestService.getFiltred(graphToken, this.reservasListName, filters)
-        const array = Array.isArray(response?.value) ? response.value : [];
+        // se consulta la lista con GraphRestService y no con ColaboradoresService para no acoplar los modulos
+        const [response, fijos] = await Promise.all([
+            this.graphRestService.getFiltred(graphToken, this.reservasListName, filters),
+            spotId
+                ? this.graphRestService.getFiltred(graphToken, this.colaboradoresFijosListName, [{ field: "SpotAsignado", value: spotId }])
+                : this.graphRestService.get(graphToken, this.colaboradoresFijosListName),
+        ])
         const ocupacion = new Map<string, OcupacionTurnos>()
+        const arrayFijos = Array.isArray(fijos?.value) ? fijos.value : [];
+        for(const item of arrayFijos){
+            const celda = item?.fields?.SpotAsignado
+            if(!celda) continue
+            ocupacion.set(celda, { Manana: true, Tarde: true })
+        }
+        const array = Array.isArray(response?.value) ? response.value : [];
         for(const item of array){
             const f = item?.fields ?? {}
             if(!f.SpotId) continue
@@ -70,7 +86,7 @@ export class ParkingSlotsService{
         try{
             item = await this.graphRestService.get(graphToken, this.listName, id)
         }catch(error: any){
-            if(error?.response?.status === 404) throw new HttpException(`La celda con id ${id} no existe`, HttpStatus.NOT_FOUND)
+            if(error?.response?.status === 404) throw new NotFoundException(`La celda con id ${id} no existe`)
             throw error
         }
         const title = item?.fields?.Title

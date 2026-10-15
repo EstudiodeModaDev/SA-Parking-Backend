@@ -30,6 +30,7 @@ export class settingsControler {
       throw new HttpException(
         'El usuario no tiene acceso',
         HttpStatus.UNAUTHORIZED,
+        
       );
     return this.SettingsService.getSettings(graphToken);
   }

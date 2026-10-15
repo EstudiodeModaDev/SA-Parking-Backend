@@ -6,5 +6,6 @@ import { GraphRestModule } from '../graph/graphRest.module.js';
     imports : [GraphRestModule],
     providers: [logService],
     exports: [logService]
+    
 })
 export class logModule {};

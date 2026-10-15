@@ -68,7 +68,7 @@ export class ColaboradoresService{
             ID : String(response?.id ?? ''),
             Title : f.Title,
             Correo: f.Correo,
-            TipoVehiculo : f.Tipodevehiculo,
+            TipoVehiculo : f.TipoVehiculo,
             Placa : f.Placa,
             CodigoCelda: f.CodigoCelda? f.CodigoCelda : '',
             SpotAsignado: f.SpotAsignado? f.SpotAsignado : ''

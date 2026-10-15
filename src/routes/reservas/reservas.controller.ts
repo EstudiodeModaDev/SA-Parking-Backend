@@ -95,7 +95,7 @@ export class ReservasController {
         'El Usuario registrado no tiene acceso',
         HttpStatus.UNAUTHORIZED,
       );
-    return this.ReservasService.createQuickAdmin(graphToken, req.body);
+    return this.ReservasService.createQuickAdmin(graphToken, req.body, req.user);
   }
 
   @Post('createPuntAdm')
@@ -107,7 +107,7 @@ export class ReservasController {
         'El Usuario registrado no tiene acceso',
         HttpStatus.UNAUTHORIZED,
       );
-    return this.ReservasService.createPuntualAdm(graphToken, req.body);
+    return this.ReservasService.createPuntualAdm(graphToken, req.body, req.user);
   }
 
   @Post('createPuntUsr')

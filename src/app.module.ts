@@ -30,3 +30,4 @@ import { APP_FILTER } from '@nestjs/core';
   providers: [{ provide: APP_FILTER, useClass: logExceptionFilter }],
 })
 export class AppModule {}
+

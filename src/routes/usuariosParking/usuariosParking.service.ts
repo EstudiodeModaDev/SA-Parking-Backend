@@ -82,7 +82,14 @@ export class UsuariosParkingService {
         HttpStatus.UNAUTHORIZED,
       );
     } else {
-      return results[0].Rol as 'Usuario' | 'Admin';
+      // normaliza el valor de SharePoint (espacios / mayusculas)
+      const rol = String(results[0].Rol ?? '').trim().toLowerCase();
+      if (rol === 'admin') return 'Admin';
+      if (rol === 'usuario') return 'Usuario';
+      throw new HttpException(
+        `Rol no valido: "${results[0].Rol}"`,
+        HttpStatus.UNAUTHORIZED,
+      );
     }
   }
 
