@@ -1,0 +1,28 @@
+# Archivos y carpetas que NO se copian a la imagen al hacer "COPY . ."
+# (Podman lee .containerignore; Docker lee .dockerignore con el mismo formato)
+
+# Dependencias y compilados: se generan dentro del contenedor (npm ci / npm run build)
+node_modules
+dist
+coverage
+*.tsbuildinfo
+
+# Credenciales: se pasan al contenedor en tiempo de ejecucion con env_file, nunca dentro de la imagen
+.env
+.env.*
+
+# Control de versiones
+.git
+.gitignore
+
+# Archivos de contenedores y documentacion (no los necesita la aplicacion)
+Containerfile
+.containerignore
+compose.yaml
+*.md
+
+# Editor, sistema operativo y logs
+.vscode
+.idea
+*.log
+NUL
